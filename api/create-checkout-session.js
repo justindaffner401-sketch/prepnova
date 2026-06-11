@@ -1,0 +1,77 @@
+// Creates a Stripe Checkout session for the PrepNova Pro subscription.
+// Requires a signed-in Supabase user (Bearer access token).
+
+import Stripe from "stripe";
+import { createClient } from "@supabase/supabase-js";
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed." });
+  }
+
+  const {
+    STRIPE_SECRET_KEY,
+    STRIPE_PRICE_ID,
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
+  } = process.env;
+  if (!STRIPE_SECRET_KEY || !STRIPE_PRICE_ID || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    return res.status(503).json({ error: "Billing isn't configured on this deployment yet." });
+  }
+
+  const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+  if (!token) {
+    return res.status(401).json({ error: "Sign in first." });
+  }
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false },
+  });
+  const { data: userData, error: authError } = await supabase.auth.getUser(token);
+  if (authError || !userData?.user) {
+    return res.status(401).json({ error: "Your session expired — sign in again." });
+  }
+  const user = userData.user;
+
+  try {
+    const stripe = new Stripe(STRIPE_SECRET_KEY);
+
+    // Reuse the Stripe customer if this user already has one.
+    const { data: subRow } = await supabase
+      .from("subscriptions")
+      .select("stripe_customer_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    let customerId = subRow?.stripe_customer_id;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        metadata: { supabase_user_id: user.id },
+      });
+      customerId = customer.id;
+      await supabase.from("subscriptions").upsert({
+        user_id: user.id,
+        stripe_customer_id: customerId,
+        status: "none",
+        updated_at: new Date().toISOString(),
+      });
+    }
+
+    const origin = req.headers.origin || "https://www.prepnovaai.com";
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      customer: customerId,
+      line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
+      client_reference_id: user.id,
+      allow_promotion_codes: true,
+      success_url: `${origin}/account?checkout=success`,
+      cancel_url: `${origin}/account?checkout=cancelled`,
+    });
+
+    return res.status(200).json({ url: session.url });
+  } catch (err) {
+    console.error("create-checkout-session:", err?.message);
+    return res.status(502).json({ error: "Couldn't start checkout. Try again in a moment." });
+  }
+}

@@ -3,6 +3,7 @@
 // Configure ANTHROPIC_API_KEY in Vercel → Project → Settings → Environment Variables.
 
 import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@supabase/supabase-js";
 import {
   MODEL,
   QUESTIONS_SCHEMA,
@@ -64,6 +65,40 @@ export default async function handler(req, res) {
       error:
         "AI generation isn't configured on this deployment yet. Site owner: set ANTHROPIC_API_KEY in Vercel → Project → Settings → Environment Variables, then redeploy.",
     });
+  }
+
+  /* ---------------- Subscription gate ----------------
+   * Active only once SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are configured;
+   * until then the endpoint stays open (free-beta behavior). The sample
+   * question set in the client never hits this endpoint and stays free.
+   */
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+  if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+    const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return res.status(401).json({
+        error: "Sign in to generate AI questions — the sample set is free without an account.",
+      });
+    }
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+    });
+    const { data: userData, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !userData?.user) {
+      return res.status(401).json({ error: "Your session expired — sign in again." });
+    }
+    const { data: sub } = await supabase
+      .from("subscriptions")
+      .select("status")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
+    const isSubscribed = ["active", "trialing", "past_due"].includes(sub?.status);
+    if (!isSubscribed) {
+      return res.status(402).json({
+        error:
+          "AI question generation is part of PrepNova Pro ($29/mo). Upgrade on your account page — the sample set stays free.",
+      });
+    }
   }
 
   const { test, subject } = req.body ?? {};

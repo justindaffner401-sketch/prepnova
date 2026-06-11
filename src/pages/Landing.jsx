@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Footer from "../components/Footer.jsx";
+import { authEnabled } from "../lib/supabase.js";
 import {
   ArrowRight,
   Bolt,
@@ -289,7 +290,7 @@ export default function Landing() {
                   </li>
                 ))}
               </ul>
-              <Link to="/select" className="btn-primary mt-6 w-full">
+              <Link to={authEnabled ? "/account" : "/select"} className="btn-primary mt-6 w-full">
                 Get started
               </Link>
             </div>

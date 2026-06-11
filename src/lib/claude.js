@@ -6,6 +6,7 @@ import {
   buildPrompt,
   validateQuestions,
 } from "./questionSpec.js";
+import { supabase } from "./supabase.js";
 
 export { MODEL };
 
@@ -29,11 +30,19 @@ export async function generateQuestions({ test, subject, apiKey, signal }) {
 /* ---------------- Server proxy path ---------------- */
 
 async function generateViaProxy({ test, subject, signal }) {
+  const headers = { "content-type": "application/json" };
+  if (supabase) {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.access_token) {
+      headers.authorization = `Bearer ${data.session.access_token}`;
+    }
+  }
+
   let res;
   try {
     res = await fetch("/api/generate-questions", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers,
       body: JSON.stringify({ test, subject }),
       signal,
     });

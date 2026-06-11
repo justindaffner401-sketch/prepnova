@@ -22,6 +22,8 @@ import {
 } from "../components/icons.jsx";
 
 import { VALID_SUBJECTS, VALID_TESTS } from "../lib/questionSpec.js";
+import { authEnabled } from "../lib/supabase.js";
+import { useAuth } from "../lib/useAuth.js";
 
 const SECONDS_PER_QUESTION = 60;
 const LETTERS = ["A", "B", "C", "D"];
@@ -78,10 +80,12 @@ export default function Practice() {
   const abortRef = useRef(null);
   const savedRef = useRef(false);
 
+  const { user, subscribed } = useAuth();
   const apiKey = getApiKey();
-  // In production the serverless proxy (/api/generate-questions) supplies the
-  // key, so AI generation is available even without a local key.
-  const aiAvailable = Boolean(apiKey) || import.meta.env.PROD;
+  // AI generation is available with a local key (dev), or in production via
+  // the serverless proxy — gated to Pro subscribers once accounts are enabled.
+  const aiAvailable =
+    Boolean(apiKey) || (import.meta.env.PROD && (!authEnabled || subscribed));
 
   useEffect(() => {
     if (!valid) navigate("/select", { replace: true });
@@ -243,12 +247,7 @@ export default function Practice() {
                     </button>
                   )}
                 </div>
-              ) : import.meta.env.PROD ? (
-                <p className="flex items-center gap-2 text-sm text-slate-400">
-                  <Check className="h-4 w-4 shrink-0 text-emerald-400" />
-                  Questions are generated server-side — no API key needed.
-                </p>
-              ) : (
+              ) : !import.meta.env.PROD ? (
                 <div>
                   <p className="flex items-center gap-2 text-sm font-semibold text-white">
                     <KeyIcon className="h-4 w-4 text-electric-400" />
@@ -276,6 +275,36 @@ export default function Practice() {
                     Stored only in this browser and sent only to Anthropic. No
                     key? Try the sample set below.
                   </p>
+                </div>
+              ) : !authEnabled ? (
+                <p className="flex items-center gap-2 text-sm text-slate-400">
+                  <Check className="h-4 w-4 shrink-0 text-emerald-400" />
+                  Questions are generated server-side — no API key needed.
+                </p>
+              ) : subscribed ? (
+                <p className="flex items-center gap-2 text-sm text-emerald-300">
+                  <Check className="h-4 w-4 shrink-0" /> PrepNova Pro active —
+                  unlimited AI questions.
+                </p>
+              ) : user ? (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="flex items-center gap-2 text-sm text-slate-300">
+                    <KeyIcon className="h-4 w-4 shrink-0 text-electric-400" />
+                    AI questions are part of PrepNova Pro.
+                  </p>
+                  <Link to="/account" className="btn-ghost btn-sm">
+                    Upgrade — $29/mo
+                  </Link>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="flex items-center gap-2 text-sm text-slate-300">
+                    <KeyIcon className="h-4 w-4 shrink-0 text-electric-400" />
+                    Sign in to unlock AI-generated questions.
+                  </p>
+                  <Link to="/account" className="btn-ghost btn-sm">
+                    Sign in
+                  </Link>
                 </div>
               )}
             </div>

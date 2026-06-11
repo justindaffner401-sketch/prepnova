@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Logo from "./Logo.jsx";
+import { authEnabled } from "../lib/supabase.js";
+import { useAuth } from "../lib/useAuth.js";
 
-const LINKS = [
+const BASE_LINKS = [
   { label: "Features", to: "/#features" },
   { label: "Pricing", to: "/#pricing" },
   { label: "Practice", to: "/select" },
@@ -12,6 +14,11 @@ const LINKS = [
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
+
+  const LINKS = authEnabled
+    ? [...BASE_LINKS, { label: user ? "Account" : "Sign in", to: "/account" }]
+    : BASE_LINKS;
 
   // Close the mobile menu on any navigation.
   useEffect(() => {
