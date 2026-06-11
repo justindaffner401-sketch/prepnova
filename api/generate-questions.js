@@ -13,9 +13,50 @@ import {
   validateQuestions,
 } from "../src/lib/questionSpec.js";
 
+/* ---------------- Rate limiting ----------------
+ * In-memory, per warm function instance. Counters aren't shared across
+ * instances/regions and reset on cold starts, so this is abuse-blunting, not
+ * a hard guarantee — pair it with a spend limit in the Anthropic console
+ * (Settings → Limits). Every request counts, including invalid ones.
+ */
+const RATE_LIMIT = 15; // requests per IP per window
+const WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const hits = new Map(); // ip -> array of request timestamps
+
+function clientIp(req) {
+  const fwd = req.headers["x-forwarded-for"];
+  if (typeof fwd === "string" && fwd.length > 0) return fwd.split(",")[0].trim();
+  return req.headers["x-real-ip"] || req.socket?.remoteAddress || "unknown";
+}
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const recent = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
+  if (recent.length >= RATE_LIMIT) {
+    hits.set(ip, recent);
+    return true;
+  }
+  recent.push(now);
+  hits.set(ip, recent);
+  if (hits.size > 5000) {
+    // Drop fully-expired entries so the map can't grow without bound.
+    for (const [key, stamps] of hits) {
+      if (stamps.every((t) => now - t >= WINDOW_MS)) hits.delete(key);
+    }
+  }
+  return false;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed." });
+  }
+
+  if (isRateLimited(clientIp(req))) {
+    return res.status(429).json({
+      error:
+        "You've hit the practice limit for this hour. Take a breather and come back soon — or run the built-in sample set.",
+    });
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
