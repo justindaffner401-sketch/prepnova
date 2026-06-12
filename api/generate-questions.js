@@ -106,12 +106,15 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid test or subject." });
   }
 
-  const client = new Anthropic({ maxRetries: 2 }); // reads ANTHROPIC_API_KEY from env
+  // 4000 tokens is ~2x what five questions need; a tight cap means a rare
+  // runaway generation fails fast instead of burning minutes. The 90s timeout
+  // bounds each attempt well inside Vercel's function limit.
+  const client = new Anthropic({ maxRetries: 1, timeout: 90_000 }); // reads ANTHROPIC_API_KEY from env
 
   try {
     const response = await client.messages.create({
       model: MODEL,
-      max_tokens: 16000,
+      max_tokens: 4000,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: buildPrompt(test, subject) }],
       output_config: {

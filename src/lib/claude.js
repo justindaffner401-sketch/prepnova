@@ -84,7 +84,8 @@ async function generateDirect({ test, subject, apiKey, signal }) {
     // Required for direct browser calls. The key stays on this device; the
     // production deployment uses the serverless proxy above instead.
     dangerouslyAllowBrowser: true,
-    maxRetries: 2,
+    maxRetries: 1,
+    timeout: 90_000,
   });
 
   let response;
@@ -92,7 +93,7 @@ async function generateDirect({ test, subject, apiKey, signal }) {
     response = await client.messages.create(
       {
         model: MODEL,
-        max_tokens: 16000,
+        max_tokens: 4000,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: buildPrompt(test, subject) }],
         output_config: {

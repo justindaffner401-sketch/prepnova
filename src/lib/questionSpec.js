@@ -44,6 +44,7 @@ Rules:
 - Exactly 4 answer choices per question.
 - Spread the correct answer across different positions — do not put it in the same position more than twice.
 - Explanations must teach: 2-4 sentences covering why the correct answer is right AND why the most tempting wrong choice fails. Refer to choices by their content, never by letter or position.
+- Keep it tight: each question text under 120 words (including any passage), each explanation under 80 words.
 - Plain text only: no markdown, no LaTeX. Write math like "3x + 5 = 20" and exponents like "x^2".`;
 }
 
