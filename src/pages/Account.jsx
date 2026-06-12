@@ -133,6 +133,32 @@ export default function Account() {
     setMessage(null);
   }
 
+  async function forgotPassword() {
+    if (!email.trim()) {
+      setMessage({
+        kind: "info",
+        text: "Type your email in the box above first, then click Forgot password again.",
+      });
+      return;
+    }
+    setBusy(true);
+    setMessage(null);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setMessage({
+        kind: "info",
+        text: "Reset link sent — check your email (and spam folder).",
+      });
+    } catch (err) {
+      setMessage({ kind: "error", text: err.message || "Couldn't send the reset email." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const renewDate = subscription?.current_period_end
     ? new Date(subscription.current_period_end).toLocaleDateString(undefined, {
         month: "long",
@@ -243,6 +269,17 @@ export default function Account() {
                 {busy ? "One moment…" : mode === "signin" ? "Sign in" : "Create account"}
               </button>
             </form>
+
+            {mode === "signin" && (
+              <button
+                type="button"
+                onClick={forgotPassword}
+                disabled={busy}
+                className="mt-4 w-full text-center text-xs text-slate-500 underline-offset-2 hover:text-slate-300 hover:underline disabled:opacity-50"
+              >
+                Forgot password?
+              </button>
+            )}
           </div>
         ) : (
           /* ---------------- Signed in ---------------- */
