@@ -6,6 +6,7 @@ import { useAuth } from "../lib/useAuth.js";
 
 const BASE_LINKS = [
   { label: "Features", to: "/#features" },
+  { label: "Why us", to: "/#why" },
   { label: "Pricing", to: "/#pricing" },
   { label: "Practice", to: "/select" },
   { label: "Progress", to: "/progress" },

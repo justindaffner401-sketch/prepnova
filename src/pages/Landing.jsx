@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Footer from "../components/Footer.jsx";
+import WhyUs from "../components/WhyUs.jsx";
 import { authEnabled } from "../lib/supabase.js";
 import {
   ArrowRight,
@@ -11,7 +12,6 @@ import {
   Sparkles,
   Target,
   TrendingUp,
-  XIcon,
 } from "../components/icons.jsx";
 
 const FEATURES = [
@@ -44,30 +44,6 @@ const FEATURES = [
     icon: Sparkles,
     title: "Always on",
     body: "No scheduling, no commute, no hourly meter running. Your AI tutor is ready at 6 a.m. or midnight.",
-  },
-];
-
-const COMPETITORS = [
-  {
-    name: "Private tutors",
-    price: "$45–200",
-    cadence: "per hour",
-    note: "A single month of weekly sessions can top $800.",
-    cons: ["Hourly meter always running", "Limited to scheduled sessions", "Quality varies wildly"],
-  },
-  {
-    name: "Princeton Review",
-    price: "$949+",
-    cadence: "per course",
-    note: "Fixed curriculum, fixed schedule.",
-    cons: ["One-size-fits-all pacing", "Expires when the course ends", "Big upfront commitment"],
-  },
-  {
-    name: "Kaplan",
-    price: "$699+",
-    cadence: "per course",
-    note: "Prerecorded lessons and question banks.",
-    cons: ["Static question banks", "Generic study plans", "Pay again to retake"],
   },
 ];
 
@@ -255,28 +231,30 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ---------------- Why us ---------------- */}
+      <WhyUs />
+
       {/* ---------------- Pricing ---------------- */}
       <section id="pricing" className="scroll-mt-28 border-t border-white/5 bg-navy-950/40">
         <div className="container-pn py-20 sm:py-24">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              Elite prep, without the <span className="text-gradient">elite price tag</span>
+              One simple <span className="text-gradient">price</span>
             </h2>
             <p className="mt-4 text-slate-400">
-              The old guard charges hundreds — sometimes per hour. PrepNova
-              gives you unlimited AI-powered practice for $29 a month.
+              Unlimited AI-powered practice across both tests and every subject.
+              No contracts, no hidden fees — cancel anytime.
             </p>
           </div>
 
-          <div className="mt-14 grid gap-5 lg:grid-cols-4">
-            {/* PrepNova — featured card, first on mobile */}
-            <div className="relative order-first rounded-2xl border border-electric-400/50 bg-gradient-to-b from-electric-500/15 to-cyan-400/5 p-6 shadow-[0_0_60px_rgba(59,130,246,0.18)] lg:order-last">
+          <div className="mx-auto mt-12 max-w-sm">
+            <div className="relative rounded-2xl border border-electric-400/50 bg-gradient-to-b from-electric-500/15 to-cyan-400/5 p-7 shadow-[0_0_60px_rgba(59,130,246,0.18)]">
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-electric-500 to-cyan-400 px-3 py-1 font-display text-[11px] font-bold tracking-wide text-white">
                 BEST VALUE
               </span>
               <p className="font-display font-bold text-white">PrepNova</p>
               <p className="mt-3">
-                <span className="font-display text-4xl font-extrabold text-white">$29</span>
+                <span className="font-display text-5xl font-extrabold text-white">$29</span>
                 <span className="ml-1 text-sm text-slate-300">/month</span>
               </p>
               <p className="mt-2 text-xs text-electric-200/90">
@@ -294,33 +272,7 @@ export default function Landing() {
                 Get started
               </Link>
             </div>
-
-            {COMPETITORS.map((c) => (
-              <div key={c.name} className="glass p-6">
-                <p className="font-display font-bold text-slate-200">{c.name}</p>
-                <p className="mt-3">
-                  <span className="font-display text-4xl font-extrabold text-slate-300">
-                    {c.price}
-                  </span>
-                  <span className="ml-1 text-sm text-slate-500">{c.cadence}</span>
-                </p>
-                <p className="mt-2 text-xs text-slate-500">{c.note}</p>
-                <ul className="mt-5 space-y-2.5">
-                  {c.cons.map((con) => (
-                    <li key={con} className="flex items-start gap-2.5 text-sm text-slate-400">
-                      <XIcon className="mt-0.5 h-4 w-4 shrink-0 text-rose-400/70" />
-                      {con}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
           </div>
-
-          <p className="mt-8 text-center text-xs text-slate-500">
-            Competitor pricing reflects publicly listed rates for standard
-            courses; tutoring rates vary by market.
-          </p>
         </div>
       </section>
 
