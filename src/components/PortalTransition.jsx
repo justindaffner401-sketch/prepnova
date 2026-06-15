@@ -8,7 +8,8 @@ const TOKENS = {
   Science: ["H₂O", "→", "CO₂", "°C", "g/L", "↑", "↓", "pH", "O₂", "△", "data", "cells"],
 };
 
-const COUNT = 30;
+const COUNT = 42;
+const PALETTE = ["#60a5fa", "#22d3ee", "#34d399", "#fbbf24", "#fb7185", "#a78bfa", "#f472b6"];
 
 export default function PortalTransition({ test, subject, onDone }) {
   const [zoom, setZoom] = useState(false);
@@ -24,10 +25,11 @@ export default function PortalTransition({ test, subject, onDone }) {
     return Array.from({ length: COUNT }, (_, i) => ({
       id: i,
       text: set[i % set.length],
+      color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
       angle: Math.round(Math.random() * 360),
-      dist: 220 + Math.round(Math.random() * 420),
-      delay: (Math.random() * 1.1).toFixed(2),
-      size: (0.8 + Math.random() * 1.5).toFixed(2),
+      dist: 220 + Math.round(Math.random() * 460),
+      delay: (Math.random() * 3.4).toFixed(2),
+      size: (0.8 + Math.random() * 1.6).toFixed(2),
     }));
   }, [subject]);
 
@@ -36,8 +38,8 @@ export default function PortalTransition({ test, subject, onDone }) {
       const id = setTimeout(onDone, 250);
       return () => clearTimeout(id);
     }
-    const zoomTimer = setTimeout(() => setZoom(true), 1350);
-    const doneTimer = setTimeout(onDone, 1850);
+    const zoomTimer = setTimeout(() => setZoom(true), 4350);
+    const doneTimer = setTimeout(onDone, 4900);
     return () => {
       clearTimeout(zoomTimer);
       clearTimeout(doneTimer);
@@ -46,6 +48,7 @@ export default function PortalTransition({ test, subject, onDone }) {
 
   return (
     <div className={`portal-overlay ${zoom ? "portal-zoom" : ""}`} role="presentation">
+      <div className="portal-vortex" />
       <div className="portal-glow" />
       <div className="portal-ring portal-ring-1" />
       <div className="portal-ring portal-ring-2" />
@@ -60,6 +63,7 @@ export default function PortalTransition({ test, subject, onDone }) {
               "--angle": `${tk.angle}deg`,
               "--dist": `${tk.dist}px`,
               "--delay": `${tk.delay}s`,
+              "--c": tk.color,
               fontSize: `${tk.size}rem`,
             }}
           >

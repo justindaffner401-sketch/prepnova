@@ -172,15 +172,51 @@
   }
 }
 
+.portal-vortex {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 560px;
+  width: 560px;
+  max-width: 150vw;
+  max-height: 150vw;
+  border-radius: 9999px;
+  background: conic-gradient(
+    from 0deg,
+    #60a5fa,
+    #22d3ee,
+    #34d399,
+    #fbbf24,
+    #fb7185,
+    #a78bfa,
+    #60a5fa
+  );
+  transform: translate(-50%, -50%);
+  filter: blur(64px);
+  opacity: 0.5;
+  animation: portalSpin 3.2s linear infinite;
+  will-change: transform;
+}
+@keyframes portalSpin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
 .portal-glow {
   position: absolute;
   left: 50%;
   top: 50%;
-  height: 320px;
-  width: 320px;
+  height: 300px;
+  width: 300px;
   transform: translate(-50%, -50%);
-  background: radial-gradient(circle, rgb(59 130 246 / 0.55), transparent 65%);
-  filter: blur(24px);
+  background: radial-gradient(
+    circle,
+    rgb(255 255 255 / 0.65),
+    rgb(96 165 250 / 0.45) 40%,
+    transparent 70%
+  );
+  filter: blur(22px);
   animation: portalPulse 1.4s ease-in-out infinite;
 }
 @keyframes portalPulse {
@@ -199,16 +235,21 @@
   top: 50%;
   height: 150px;
   width: 150px;
-  border: 2px solid rgb(96 165 250 / 0.45);
+  border: 2px solid rgb(96 165 250 / 0.55);
   border-radius: 9999px;
   transform: translate(-50%, -50%);
-  animation: portalRing 1.6s ease-out infinite;
+  animation: portalRing 1.7s ease-out infinite;
+}
+.portal-ring-1 {
+  border-color: rgb(96 165 250 / 0.6);
 }
 .portal-ring-2 {
-  animation-delay: 0.53s;
+  animation-delay: 0.57s;
+  border-color: rgb(244 114 182 / 0.6);
 }
 .portal-ring-3 {
-  animation-delay: 1.06s;
+  animation-delay: 1.14s;
+  border-color: rgb(34 211 238 / 0.6);
 }
 @keyframes portalRing {
   0% {
@@ -234,11 +275,13 @@
   top: 50%;
   font-family: var(--font-display);
   font-weight: 700;
-  color: #bfdbfe;
-  text-shadow: 0 0 14px rgb(59 130 246 / 0.8);
+  color: var(--c, #bfdbfe);
+  text-shadow:
+    0 0 16px var(--c, rgb(59 130 246 / 0.8)),
+    0 0 6px var(--c, rgb(59 130 246 / 0.8));
   white-space: nowrap;
   opacity: 0;
-  animation: portalFly 1.5s var(--delay, 0s) cubic-bezier(0.55, 0, 0.9, 0.45) infinite;
+  animation: portalFly 1.8s var(--delay, 0s) cubic-bezier(0.55, 0, 0.9, 0.45) infinite;
   will-change: transform, opacity;
 }
 .portal-token-inner {
@@ -263,7 +306,7 @@
   position: relative;
   z-index: 2;
   text-align: center;
-  animation: portalApproach 1.7s ease-in both;
+  animation: portalApproach 4.7s ease-in both;
 }
 .portal-label-test {
   display: block;
@@ -297,6 +340,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .portal-overlay,
+  .portal-vortex,
   .portal-glow,
   .portal-ring,
   .portal-token,
