@@ -53,11 +53,11 @@ export const QUESTIONS_SCHEMA = {
   additionalProperties: false,
 };
 
-export function buildPrompt(test, subject) {
-  return `Write exactly 5 multiple-choice practice questions for ${test} ${subject} prep.
+export function buildPrompt(test, subject, count = 5) {
+  return `Write exactly ${count} multiple-choice practice questions for ${test} ${subject} prep.
 
 Rules:
-- Match the style, topics, and difficulty of real ${test} ${subject} questions. Mix difficulty: roughly 2 easy, 2 medium, 1 hard.
+- Match the style, topics, and difficulty of real ${test} ${subject} questions. Mix difficulty across easy, medium, and hard, including at least one hard question.
 - Every question must be fully self-contained. For Reading, embed a short 2-4 sentence passage inside the question text. For Science, describe the experiment, table, or data trend in plain prose inside the question text.
 - Exactly 4 answer choices per question. Each choice is an object { "text": "...", "correct": true|false }.
 - ACTUALLY SOLVE each problem before writing the choices. Mark exactly ONE choice with "correct": true (the verified right answer) and the other three with "correct": false. Double-check that the choice you mark correct is genuinely the right answer.
@@ -104,7 +104,9 @@ export function validateQuestions(text) {
   if (cleaned.length < 5) {
     throw new Error("Claude didn't return a complete set of questions. Try again.");
   }
-  return cleaned.slice(0, 5);
+  // Return all valid questions (capped). Over-generation + the verification
+  // pass may trim this; callers slice to the 5 they actually show.
+  return cleaned.slice(0, 12);
 }
 
 /* ===================================================================
@@ -283,32 +285,57 @@ export function validatePassageSet(text) {
     }
   }
 
-  // Span questions in reading order, then standalone questions appended.
-  const orderedSpanRefs = underlineRefs.filter((r) => spanByRef.has(r));
-  const ordered = [
-    ...orderedSpanRefs.map((r) => ({ oldRef: r, q: spanByRef.get(r) })),
-    ...standalone.map((q) => ({ oldRef: 0, q })),
+  // Assemble candidates (span questions carry their underline ref; standalone
+  // carry ref 0) and let renumberPassage order + renumber them like the test.
+  const candidates = [
+    ...[...spanByRef.entries()].map(([ref, q]) => ({ ...q, ref })),
+    ...standalone.map((q) => ({ ...q, ref: 0 })),
   ];
-  if (ordered.length < 5) {
+  const { segments: finalSegments, questions: finalQuestions } = renumberPassage(
+    segments,
+    candidates,
+  );
+  if (finalQuestions.length < 5) {
     throw new Error("Claude didn't return a complete passage set. Try again.");
   }
-
-  // Assign display numbers 1..N and remember how each underline was renumbered.
-  const renumber = new Map(); // old underline ref -> new display number
-  const finalQuestions = ordered.map(({ oldRef, q }, i) => {
-    const number = i + 1;
-    if (oldRef > 0) renumber.set(oldRef, number);
-    return { ...q, ref: oldRef > 0 ? number : 0 };
-  });
-
-  // Keep only underlines that have a matching valid question; relabel them.
-  const finalSegments = segments
-    .filter((s) => !s.underline || renumber.has(s.ref))
-    .map((s) => (s.underline ? { ...s, ref: renumber.get(s.ref) } : s));
 
   return {
     title: typeof parsed?.title === "string" ? parsed.title.trim() : "",
     segments: finalSegments,
     questions: finalQuestions,
   };
+}
+
+// Order a passage's questions like the real test — underline-tied questions in
+// reading order, then whole-passage questions — and renumber underlines and
+// questions to a clean contiguous 1..K. Shared by validatePassageSet and the
+// post-verification rebuild. Each question carries `ref` (>0 = underline
+// number, 0 = whole-passage). Underline segments with no surviving question are
+// dropped; to KEEP such text, unwrap the segment to plain text before calling.
+export function renumberPassage(segments, questions) {
+  const underlineOrder = segments.filter((s) => s.underline).map((s) => s.ref);
+  const spanByRef = new Map();
+  const standalone = [];
+  for (const q of questions) {
+    if (q.ref > 0 && underlineOrder.includes(q.ref)) {
+      if (!spanByRef.has(q.ref)) spanByRef.set(q.ref, q);
+    } else if (q.ref === 0) {
+      standalone.push(q);
+    }
+  }
+  const orderedSpanRefs = underlineOrder.filter((r) => spanByRef.has(r));
+  const ordered = [
+    ...orderedSpanRefs.map((r) => ({ oldRef: r, q: spanByRef.get(r) })),
+    ...standalone.map((q) => ({ oldRef: 0, q })),
+  ];
+  const renumber = new Map();
+  const finalQuestions = ordered.map(({ oldRef, q }, i) => {
+    const number = i + 1;
+    if (oldRef > 0) renumber.set(oldRef, number);
+    return { ...q, ref: oldRef > 0 ? number : 0 };
+  });
+  const finalSegments = segments
+    .filter((s) => !s.underline || renumber.has(s.ref))
+    .map((s) => (s.underline ? { ...s, ref: renumber.get(s.ref) } : s));
+  return { segments: finalSegments, questions: finalQuestions };
 }

@@ -147,7 +147,9 @@ async function generateDirect({ test, subject, apiKey, signal, mode }) {
   }
 
   const text = response.content.find((block) => block.type === "text")?.text ?? "";
-  return passage ? validatePassageSet(text) : validateQuestions(text);
+  // The local-key dev path doesn't run the server-side verification pass; just
+  // show the first five validated questions.
+  return passage ? validatePassageSet(text) : validateQuestions(text).slice(0, 5);
 }
 
 function friendlyError(err) {

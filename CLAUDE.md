@@ -11,7 +11,7 @@ machine (Mac or Windows) can pick up the project — read it first.
 - **Auth + DB:** Supabase (project ref `roufybwqayzhldgfdbgo`). `subscriptions` table; email confirm ON; SMTP via Resend.
 - **Payments:** Stripe (LIVE). Monthly $29 (7-day trial), 1-Year $250/yr recurring, Lifetime $600 one-time.
 - **Email:** Resend (domain prepnovaai.com verified) → Supabase custom SMTP.
-- **AI questions:** Anthropic `claude-haiku-4-5-20251001` via `/api/generate-questions` (key server-side).
+- **AI questions:** Anthropic `claude-haiku-4-5-20251001` via `/api/generate-questions` (key server-side). A 2nd-model **verification pass** (OpenAI, `api/_verify.js`) re-solves each generated question and drops disagreements — active only when `OPENAI_API_KEY` is set in Vercel; no-ops otherwise.
 - **Stack:** Vite 7 + React 19 + Tailwind v4 (`@theme` tokens in `src/index.css`) + React Router 7.
 
 ## Run / deploy
@@ -63,7 +63,7 @@ Spec from the owner (remaining slices):
 
 **Reference:** owner's 4 official ACT tests are in iCloud Drive at `College Shit/ACT Tests/` (syncs across his Apple devices). Use them to extract the FORMAT/blueprint and replicate the UI — generate ORIGINAL questions, never copy (ACT, Inc. copyright). Reading PDFs needs the `pdf` skill or a Python env (pypdf/pdfplumber); poppler/Python were absent on the original Windows PC.
 
-Also pending: an **AI verification pass** (a 2nd model re-solves each generated question, drop disagreements) for correctness — owner has an OpenAI key.
+**DONE — AI verification pass:** a 2nd model (OpenAI, `api/_verify.js`) re-solves each generated question and drops disagreements. Server-side only; MCQ sets over-generate (8) so a full 5 survives; passage sets drop disputed questions, unwrap their underlines, and renumber. Activates when `OPENAI_API_KEY` is set in Vercel (optional `OPENAI_VERIFY_MODEL`, default `gpt-4o-mini`); no-ops without the key. **Owner: add `OPENAI_API_KEY` in Vercel → Settings → Environment Variables to turn it on.**
 
 ## Conventions / gotchas
 

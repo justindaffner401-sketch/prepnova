@@ -18,6 +18,7 @@ import {
   validateQuestions,
 } from "../src/lib/questionSpec.js";
 import { isEntitled } from "../src/lib/entitlement.js";
+import { verifierEnabled, verifyMcq, verifyPassage } from "./_verify.js";
 
 /* ---------------- Rate limiting ----------------
  * In-memory, per warm function instance. Counters aren't shared across
@@ -113,9 +114,12 @@ export default async function handler(req, res) {
   // subject is configured for so an older client can't ask for MCQs on a
   // passage-only section.
   const passage = mode === "passage" || isPassageMode(test, subject);
+  // When the verifier is on, over-generate standalone MCQs so dropping the
+  // occasional disputed question still leaves a full set of 5.
+  const mcqCount = verifierEnabled() ? 8 : 5;
 
   // The 90s timeout bounds each attempt well inside Vercel's function limit;
-  // 8000 tokens covers either a 5-MCQ set or a full passage + grouped Qs.
+  // 8000 tokens covers either an over-generated MCQ set or a full passage.
   const client = new Anthropic({ maxRetries: 1, timeout: 90_000 }); // reads ANTHROPIC_API_KEY from env
 
   try {
@@ -126,7 +130,9 @@ export default async function handler(req, res) {
       messages: [
         {
           role: "user",
-          content: passage ? buildPassagePrompt(test, subject) : buildPrompt(test, subject),
+          content: passage
+            ? buildPassagePrompt(test, subject)
+            : buildPrompt(test, subject, mcqCount),
         },
       ],
       output_config: {
@@ -146,9 +152,20 @@ export default async function handler(req, res) {
 
     const text = response.content.find((block) => block.type === "text")?.text ?? "";
     if (passage) {
-      return res.status(200).json({ passage: validatePassageSet(text) });
+      // verifyPassage drops disputed questions (and falls back to the
+      // unverified set if that would gut the passage).
+      const set = await verifyPassage(validatePassageSet(text));
+      return res.status(200).json({ passage: set });
     }
-    return res.status(200).json({ questions: validateQuestions(text) });
+
+    let questions = validateQuestions(text);
+    if (verifierEnabled()) {
+      const verified = await verifyMcq(questions);
+      // Use the verified set only if it still has a full 5; otherwise keep the
+      // unverified set so the student never ends up short.
+      if (verified.length >= 5) questions = verified;
+    }
+    return res.status(200).json({ questions: questions.slice(0, 5) });
   } catch (err) {
     if (err instanceof Anthropic.RateLimitError) {
       return res
