@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase.js";
 
-const ACTIVE_STATUSES = ["active", "trialing", "past_due"];
+const ACTIVE_STATUSES = ["active", "trialing", "past_due", "lifetime"];
 
 /**
  * Auth + subscription state. Safe to call when Supabase isn't configured —

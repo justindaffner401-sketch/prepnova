@@ -239,28 +239,26 @@ export default function Landing() {
         <div className="container-pn py-20 sm:py-24">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              One simple <span className="text-gradient">price</span>
+              Simple pricing. <span className="text-gradient">Start free.</span>
             </h2>
             <p className="mt-4 text-slate-400">
               Unlimited AI-powered practice across both tests and every subject.
-              No contracts, no hidden fees — cancel anytime.
+              Try it free for 7 days — or pay once and keep it forever.
             </p>
           </div>
 
-          <div className="mx-auto mt-12 max-w-sm">
-            <div className="relative rounded-2xl border border-electric-400/50 bg-gradient-to-b from-electric-500/15 to-cyan-400/5 p-7 shadow-[0_0_60px_rgba(59,130,246,0.18)]">
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-electric-500 to-cyan-400 px-3 py-1 font-display text-[11px] font-bold tracking-wide text-white">
-                BEST VALUE
-              </span>
-              <p className="font-display font-bold text-white">PrepNova</p>
+          <div className="mx-auto mt-12 grid max-w-3xl gap-5 sm:grid-cols-2">
+            {/* Monthly */}
+            <div className="glass flex flex-col p-7">
+              <p className="font-display font-bold text-white">Monthly</p>
               <p className="mt-3">
                 <span className="font-display text-5xl font-extrabold text-white">$29</span>
                 <span className="ml-1 text-sm text-slate-300">/month</span>
               </p>
               <p className="mt-2 text-xs text-electric-200/90">
-                Less than one hour with the cheapest tutor.
+                Starts with a 7-day free trial.
               </p>
-              <ul className="mt-5 space-y-2.5">
+              <ul className="mt-5 flex-1 space-y-2.5">
                 {PREPNOVA_PERKS.map((perk) => (
                   <li key={perk} className="flex items-start gap-2.5 text-sm text-slate-200">
                     <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
@@ -268,11 +266,45 @@ export default function Landing() {
                   </li>
                 ))}
               </ul>
+              <Link to={authEnabled ? "/account" : "/select"} className="btn-ghost mt-6 w-full">
+                Start free trial
+              </Link>
+            </div>
+
+            {/* Lifetime */}
+            <div className="relative flex flex-col rounded-2xl border border-electric-400/50 bg-gradient-to-b from-electric-500/15 to-cyan-400/5 p-7 shadow-[0_0_60px_rgba(59,130,246,0.18)]">
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-electric-500 to-cyan-400 px-3 py-1 font-display text-[11px] font-bold tracking-wide text-white">
+                BEST VALUE
+              </span>
+              <p className="font-display font-bold text-white">Lifetime</p>
+              <p className="mt-3">
+                <span className="font-display text-5xl font-extrabold text-white">$180</span>
+                <span className="ml-1 text-sm text-slate-300">once</span>
+              </p>
+              <p className="mt-2 text-xs text-electric-200/90">
+                Pay once, yours forever — never pay again.
+              </p>
+              <ul className="mt-5 flex-1 space-y-2.5">
+                {PREPNOVA_PERKS.map((perk) => (
+                  <li key={perk} className="flex items-start gap-2.5 text-sm text-slate-200">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                    {perk}
+                  </li>
+                ))}
+                <li className="flex items-start gap-2.5 text-sm text-slate-200">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                  No recurring charges, ever
+                </li>
+              </ul>
               <Link to={authEnabled ? "/account" : "/select"} className="btn-primary mt-6 w-full">
-                Get started
+                Get lifetime access
               </Link>
             </div>
           </div>
+
+          <p className="mt-8 text-center text-xs text-slate-500">
+            Cancel the monthly plan anytime. The sample question set is always free.
+          </p>
         </div>
       </section>
 

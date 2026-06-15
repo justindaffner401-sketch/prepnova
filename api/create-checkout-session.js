@@ -1,8 +1,11 @@
-// Creates a Stripe Checkout session for the PrepNova Pro subscription.
-// Requires a signed-in Supabase user (Bearer access token).
+// Creates a Stripe Checkout session for PrepNova Pro.
+// Two plans: "monthly" ($29/mo with a 7-day free trial) and "lifetime"
+// ($180 one-time). Requires a signed-in Supabase user (Bearer access token).
 
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+
+const TRIAL_DAYS = 7;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -12,11 +15,17 @@ export default async function handler(req, res) {
   const {
     STRIPE_SECRET_KEY,
     STRIPE_PRICE_ID,
+    STRIPE_LIFETIME_PRICE_ID,
     SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY,
   } = process.env;
   if (!STRIPE_SECRET_KEY || !STRIPE_PRICE_ID || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     return res.status(503).json({ error: "Billing isn't configured on this deployment yet." });
+  }
+
+  const plan = req.body?.plan === "lifetime" ? "lifetime" : "monthly";
+  if (plan === "lifetime" && !STRIPE_LIFETIME_PRICE_ID) {
+    return res.status(503).json({ error: "The lifetime plan isn't available yet." });
   }
 
   const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
@@ -59,16 +68,32 @@ export default async function handler(req, res) {
     }
 
     const origin = req.headers.origin || "https://www.prepnovaai.com";
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
+    const common = {
       customer: customerId,
-      line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
       client_reference_id: user.id,
       allow_promotion_codes: true,
       success_url: `${origin}/account?checkout=success`,
       cancel_url: `${origin}/account?checkout=cancelled`,
-    });
+    };
 
+    const params =
+      plan === "lifetime"
+        ? {
+            ...common,
+            mode: "payment",
+            line_items: [{ price: STRIPE_LIFETIME_PRICE_ID, quantity: 1 }],
+            payment_intent_data: {
+              metadata: { plan: "lifetime", supabase_user_id: user.id },
+            },
+          }
+        : {
+            ...common,
+            mode: "subscription",
+            line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
+            subscription_data: { trial_period_days: TRIAL_DAYS },
+          };
+
+    const session = await stripe.checkout.sessions.create(params);
     return res.status(200).json({ url: session.url });
   } catch (err) {
     console.error("create-checkout-session:", err?.message);

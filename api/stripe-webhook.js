@@ -50,16 +50,29 @@ export async function POST(request) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object;
-        if (session.mode !== "subscription" || !session.client_reference_id) break;
-        const subscription = await stripe.subscriptions.retrieve(session.subscription);
-        await supabase.from("subscriptions").upsert({
-          user_id: session.client_reference_id,
-          stripe_customer_id: session.customer,
-          stripe_subscription_id: subscription.id,
-          status: subscription.status,
-          current_period_end: periodEnd(subscription),
-          updated_at: new Date().toISOString(),
-        });
+        if (!session.client_reference_id) break;
+
+        if (session.mode === "payment") {
+          // Lifetime one-time purchase — never expires.
+          await supabase.from("subscriptions").upsert({
+            user_id: session.client_reference_id,
+            stripe_customer_id: session.customer,
+            stripe_subscription_id: null,
+            status: "lifetime",
+            current_period_end: null,
+            updated_at: new Date().toISOString(),
+          });
+        } else if (session.mode === "subscription") {
+          const subscription = await stripe.subscriptions.retrieve(session.subscription);
+          await supabase.from("subscriptions").upsert({
+            user_id: session.client_reference_id,
+            stripe_customer_id: session.customer,
+            stripe_subscription_id: subscription.id,
+            status: subscription.status,
+            current_period_end: periodEnd(subscription),
+            updated_at: new Date().toISOString(),
+          });
+        }
         break;
       }
 
@@ -68,10 +81,11 @@ export async function POST(request) {
         const subscription = event.data.object;
         const { data: row } = await supabase
           .from("subscriptions")
-          .select("user_id")
+          .select("user_id, status")
           .eq("stripe_customer_id", subscription.customer)
           .maybeSingle();
         if (!row?.user_id) break; // customer we don't know about
+        if (row.status === "lifetime") break; // never downgrade a lifetime member
         await supabase.from("subscriptions").upsert({
           user_id: row.user_id,
           stripe_customer_id: subscription.customer,
