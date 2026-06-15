@@ -122,22 +122,30 @@ export default async function handler(req, res) {
     }
   }
 
-  const { test, subject, mode } = req.body ?? {};
+  const { test, subject, mode, variant: reqVariant } = req.body ?? {};
   if (!VALID_TESTS.includes(test) || !VALID_SUBJECTS.includes(subject)) {
     return res.status(400).json({ error: "Invalid test or subject." });
   }
+  // Section assembly may request a larger MCQ batch (capped at 12).
+  const requested = Number.isInteger(req.body?.count)
+    ? Math.min(12, Math.max(5, req.body.count))
+    : 5;
   // Honor an explicit passage request, but also fall back to the format the
   // subject is configured for so an older client can't ask for MCQs on a
   // passage-only section.
   const writing = mode === "writing" || isWritingMode(test, subject);
   const reading = !writing && (mode === "reading" || isReadingMode(test, subject));
   const passage = !writing && !reading && (mode === "passage" || isPassageMode(test, subject));
-  // When the verifier is on, over-generate standalone MCQs so dropping the
-  // occasional disputed question still leaves a full set of 5.
-  const mcqCount = verifierEnabled() ? 8 : 5;
+  // When the verifier is on, over-generate MCQs so dropping the occasional
+  // disputed question still leaves the requested count.
+  const mcqCount = Math.max(requested, verifierEnabled() ? 8 : 5);
 
-  // Reading randomly picks a passage variant (single / paired / graph).
-  const readingVariant = reading ? chooseReadingVariant() : null;
+  // Reading uses a requested variant (section assembly) when valid, else random.
+  const readingVariant = reading
+    ? ["single", "paired", "graph"].includes(reqVariant)
+      ? reqVariant
+      : chooseReadingVariant()
+    : null;
   const content = writing
     ? buildWritingPrompt(test, subject)
     : reading
@@ -195,7 +203,7 @@ export default async function handler(req, res) {
     }
 
     const { verified, questions } = await verifyMcq(validateQuestions(text));
-    return res.status(200).json({ questions: questions.slice(0, 5), verified });
+    return res.status(200).json({ questions: questions.slice(0, requested), verified });
   } catch (err) {
     if (err instanceof Anthropic.RateLimitError) {
       return res

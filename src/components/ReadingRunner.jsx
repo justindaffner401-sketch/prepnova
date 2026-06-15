@@ -45,7 +45,15 @@ function formatElapsed(seconds) {
  *  - onExit():  leave without scoring
  *  - onComplete({ score, total }): finish and record the result
  */
-export default function ReadingRunner({ reading, test, source, verified, onExit, onComplete }) {
+export default function ReadingRunner({
+  reading,
+  test,
+  source,
+  verified,
+  hideTimer,
+  onExit,
+  onComplete,
+}) {
   const { format, title, genre, paragraphs, questions, passageA, passageB, figure } = reading;
   const total = questions.length;
 
@@ -54,9 +62,10 @@ export default function ReadingRunner({ reading, test, source, verified, onExit,
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
+    if (hideTimer) return undefined;
     const id = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [hideTimer]);
 
   const question = questions[current];
   const answered = answers[current];
@@ -123,10 +132,12 @@ export default function ReadingRunner({ reading, test, source, verified, onExit,
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 font-display text-sm font-semibold text-slate-300">
-          <Clock className="h-4 w-4 text-slate-400" />
-          {formatElapsed(elapsed)}
-        </div>
+        {!hideTimer && (
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 font-display text-sm font-semibold text-slate-300">
+            <Clock className="h-4 w-4 text-slate-400" />
+            {formatElapsed(elapsed)}
+          </div>
+        )}
       </div>
 
       {/* Progress segments */}

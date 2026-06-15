@@ -32,6 +32,7 @@ export default function PassageRunner({
   subject,
   source,
   verified,
+  hideTimer,
   onExit,
   onComplete,
 }) {
@@ -46,9 +47,10 @@ export default function PassageRunner({
   // Count-up timer — the real section is timed, but a single-passage drill
   // shouldn't auto-fail the student, so this only measures, never expires.
   useEffect(() => {
+    if (hideTimer) return undefined;
     const id = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [hideTimer]);
 
   // Map an underline ref to its question index so clicking a span navigates.
   const refToIndex = useMemo(() => {
@@ -127,10 +129,12 @@ export default function PassageRunner({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 font-display text-sm font-semibold text-slate-300">
-          <Clock className="h-4 w-4 text-slate-400" />
-          {formatElapsed(elapsed)}
-        </div>
+        {!hideTimer && (
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 font-display text-sm font-semibold text-slate-300">
+            <Clock className="h-4 w-4 text-slate-400" />
+            {formatElapsed(elapsed)}
+          </div>
+        )}
       </div>
 
       {/* Progress segments */}

@@ -10,6 +10,7 @@ import {
   buildWritingPrompt,
   chooseReadingVariant,
   modelForMode,
+  READING_VARIANTS,
   readingPromptFor,
   readingSchemaFor,
   validatePassageSet,
@@ -32,10 +33,10 @@ export { MODEL };
  *
  * Throws an Error with a user-friendly message on failure.
  */
-export async function generateQuestions({ test, subject, apiKey, signal }) {
+export async function generateQuestions({ test, subject, apiKey, signal, count }) {
   const { data, verified } = apiKey
-    ? await generateDirect({ test, subject, apiKey, signal, mode: "mcq" })
-    : await generateViaProxy({ test, subject, signal, mode: "mcq" });
+    ? await generateDirect({ test, subject, apiKey, signal, mode: "mcq", count })
+    : await generateViaProxy({ test, subject, signal, mode: "mcq", count });
   return { questions: data, verified };
 }
 
@@ -56,10 +57,10 @@ export async function generatePassage({ test, subject, apiKey, signal }) {
  * Generate one ACT Reading passage + comprehension questions.
  * Returns { reading: { title, genre, paragraphs, questions }, verified }.
  */
-export async function generateReading({ test, subject, apiKey, signal }) {
+export async function generateReading({ test, subject, apiKey, signal, variant }) {
   const { data, verified } = apiKey
-    ? await generateDirect({ test, subject, apiKey, signal, mode: "reading" })
-    : await generateViaProxy({ test, subject, signal, mode: "reading" });
+    ? await generateDirect({ test, subject, apiKey, signal, mode: "reading", variant })
+    : await generateViaProxy({ test, subject, signal, mode: "reading", variant });
   return { reading: data, verified };
 }
 
@@ -76,7 +77,7 @@ export async function generateWriting({ test, subject, apiKey, signal }) {
 
 /* ---------------- Server proxy path ---------------- */
 
-async function generateViaProxy({ test, subject, signal, mode }) {
+async function generateViaProxy({ test, subject, signal, mode, count, variant }) {
   const headers = { "content-type": "application/json" };
   if (supabase) {
     const { data } = await supabase.auth.getSession();
@@ -90,7 +91,13 @@ async function generateViaProxy({ test, subject, signal, mode }) {
     res = await fetch("/api/generate-questions", {
       method: "POST",
       headers,
-      body: JSON.stringify({ test, subject, mode }),
+      body: JSON.stringify({
+        test,
+        subject,
+        mode,
+        ...(count ? { count } : {}),
+        ...(variant ? { variant } : {}),
+      }),
       signal,
     });
   } catch (err) {
@@ -146,7 +153,7 @@ async function generateViaProxy({ test, subject, signal, mode }) {
 
 /* ---------------- Direct browser path ---------------- */
 
-async function generateDirect({ test, subject, apiKey, signal, mode }) {
+async function generateDirect({ test, subject, apiKey, signal, mode, count, variant: forced }) {
   const client = new Anthropic({
     apiKey,
     // Required for direct browser calls. The key stays on this device; the
@@ -156,9 +163,10 @@ async function generateDirect({ test, subject, apiKey, signal, mode }) {
     timeout: 90_000,
   });
 
-  // For Reading, pick which passage variant to generate (single / paired /
-  // graph) and use it consistently for the prompt, schema, and validator.
-  const variant = mode === "reading" ? chooseReadingVariant() : null;
+  // For Reading, use the forced variant if given (section assembly), else pick
+  // one at random; keep it consistent across prompt, schema, and validator.
+  const variant =
+    mode === "reading" ? (READING_VARIANTS.includes(forced) ? forced : chooseReadingVariant()) : null;
   const content =
     mode === "passage"
       ? buildPassagePrompt(test, subject)
@@ -166,7 +174,7 @@ async function generateDirect({ test, subject, apiKey, signal, mode }) {
         ? readingPromptFor(variant, test, subject)
         : mode === "writing"
           ? buildWritingPrompt(test, subject)
-          : buildPrompt(test, subject);
+          : buildPrompt(test, subject, count || 5);
   const schema =
     mode === "passage"
       ? PASSAGE_SCHEMA
@@ -211,7 +219,7 @@ async function generateDirect({ test, subject, apiKey, signal, mode }) {
         ? validateReadingFor(variant, text)
         : mode === "writing"
           ? validateWritingSet(text)
-          : validateQuestions(text).slice(0, 5);
+          : validateQuestions(text).slice(0, count || 5);
   return { data, verified: false };
 }
 

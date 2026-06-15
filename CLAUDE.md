@@ -42,6 +42,16 @@ vars (Stripe/Supabase/Anthropic) which are set in the Vercel dashboard, not in t
 - **Math figures:** math questions may carry an optional `figure` (`MATH_FIGURE_SCHEMA`, sanitized by `sanitizeMathFigure`) — geometry shapes (polygons/circles + labels) or coordinate plots (curves + axes). Rendered by `src/components/MathFigure.jsx` (one math plane, y flipped up). `buildMathPrompt` asks for one only when a question needs a diagram. `ChartFigure.jsx` renders categorical bar/line charts for Reading graph passages.
 - `api/` — Vercel serverless: `generate-questions.js` (Pro-gated, rate-limited), `create-checkout-session.js`, `create-portal-session.js`, `stripe-webhook.js`.
 
+## Full-length exams (`/exam`, `src/pages/Exam.jsx`)
+
+A section is an ordered list of UNITS assembled client-side (`src/lib/section.js`,
+`SECTION_PLANS`) by repeated generator calls with a progress bar. `SectionRunner.jsx`
+sequences the units through the existing runners (`hideTimer` prop) under one
+countdown timer with combined scoring; `McqRunner.jsx` handles Math/Science units.
+"Full exam" mode runs `EXAM_SECTIONS[test]` back-to-back with break screens.
+Generation threads a bulk `count` (MCQ) and forced Reading `variant` through the API.
+Pro-gated (uses AI generation). Per-section results saved with `source:"exam"`.
+
 ## Status — what's done
 
 Built & live: landing/Why-Us/pricing, accounts + Stripe (monthly trial / yearly / lifetime), Supabase auth + Resend password reset, AI question generation (Pro-gated), Desmos calculator on Math, score tracker, Vercel Analytics, portal transition, SEO/OG tags + sitemap.

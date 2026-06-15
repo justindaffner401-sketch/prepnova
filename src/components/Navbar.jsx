@@ -9,6 +9,7 @@ const BASE_LINKS = [
   { label: "Why us", to: "/#why" },
   { label: "Pricing", to: "/#pricing" },
   { label: "Practice", to: "/select" },
+  { label: "Full exam", to: "/exam" },
   { label: "Progress", to: "/progress" },
 ];
 
