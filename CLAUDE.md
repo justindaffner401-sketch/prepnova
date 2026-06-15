@@ -1,0 +1,66 @@
+# PrepNova — project context for Claude Code
+
+AI-powered ACT & SAT prep web app. **Live and taking real payments at https://www.prepnovaai.com.**
+Owner: Justin (GitHub `justindaffner401-sketch`). This file is the single source of truth so any
+machine (Mac or Windows) can pick up the project — read it first.
+
+## Stack & where everything lives (all cloud — not tied to any one computer)
+
+- **Code:** GitHub `justindaffner401-sketch/prepnova`. Pushing to `main` auto-deploys.
+- **Hosting:** Vercel (project `prepnova`, org `jdaff-s-projects`). Auto-deploys from GitHub `main`.
+- **Auth + DB:** Supabase (project ref `roufybwqayzhldgfdbgo`). `subscriptions` table; email confirm ON; SMTP via Resend.
+- **Payments:** Stripe (LIVE). Monthly $29 (7-day trial), 1-Year $250/yr recurring, Lifetime $600 one-time.
+- **Email:** Resend (domain prepnovaai.com verified) → Supabase custom SMTP.
+- **AI questions:** Anthropic `claude-haiku-4-5-20251001` via `/api/generate-questions` (key server-side).
+- **Stack:** Vite 7 + React 19 + Tailwind v4 (`@theme` tokens in `src/index.css`) + React Router 7.
+
+## Run / deploy
+
+```
+npm install
+npm run dev        # local dev (port 5173)
+npm run build      # production build
+git push           # → Vercel auto-deploys to prepnovaai.com
+```
+
+No local env vars needed just to run the UI; the serverless `/api/*` functions need the Vercel env
+vars (Stripe/Supabase/Anthropic) which are set in the Vercel dashboard, not in the repo.
+
+## Architecture / key files
+
+- `src/pages/Landing.jsx` — landing (hero, Why Us cost comparison `src/components/WhyUs.jsx`, 3-tier pricing).
+- `src/pages/SubjectSelect.jsx` — pick test then subject. `SUBJECTS_BY_TEST`: ACT=English/Math/Reading/Science, SAT=Math/English. Fires `PortalTransition` on start.
+- `src/components/PortalTransition.jsx` + portal CSS in `src/index.css` — ~5s colorful portal animation.
+- `src/pages/Practice.jsx` — practice session: 5 MCQs, 60s timer, explanations. `CalculatorWidget` (Desmos) shows for Math.
+- `src/pages/Progress.jsx` — localStorage score tracker + SVG chart.
+- `src/pages/Account.jsx` — auth (Supabase), plan selector, Stripe checkout. `src/pages/ResetPassword.jsx`.
+- `src/lib/questionSpec.js` — SHARED by client + server: prompt, structured-output schema, `validateQuestions`. **Each choice has `{text, correct}` (no separate answerIndex) — this prevents the answer/explanation mismatch.**
+- `src/lib/entitlement.js` — `isEntitled(sub)` shared by client (`useAuth`) + server gate.
+- `src/lib/claude.js` — browser-direct generation (dev/local key path).
+- `src/lib/demoQuestions.js` — free sample questions (shuffled; answers verified correct).
+- `api/` — Vercel serverless: `generate-questions.js` (Pro-gated, rate-limited), `create-checkout-session.js`, `create-portal-session.js`, `stripe-webhook.js`.
+
+## Status — what's done
+
+Built & live: landing/Why-Us/pricing, accounts + Stripe (monthly trial / yearly / lifetime), Supabase auth + Resend password reset, AI question generation (Pro-gated), Desmos calculator on Math, score tracker, Vercel Analytics, portal transition, SEO/OG tags + sitemap.
+
+## Status — PENDING (the big next phase): passage-based exam replica
+
+Practice must look like the real digital ACT/SAT (College Board). Current format is 5 standalone MCQs;
+the redesign groups questions under a shared passage. Spec from the owner:
+- **ACT English:** a passage with grammar/tone/spelling questions; the part each question asks about is **underlined in the passage**; answer as you go. ~5–6 passages × 5–10 Qs.
+- **ACT Reading:** read the whole passage, answer about it ("what is the purpose of paragraph X"). 36 Qs, 4 passages; ONE has a graph; ONE is a paired passage split A/B.
+- **SAT English** = Reading & Writing (combined reading + grammar).
+- Big passage + 5–10 related questions grouped; passage stays pinned while answering.
+- Needs: new generation schema (passage + grouped Qs + underline spans + paired A/B + graphs) and a new Practice UI.
+
+**Reference:** owner's 4 official ACT tests are in iCloud Drive at `College Shit/ACT Tests/` (syncs across his Apple devices). Use them to extract the FORMAT/blueprint and replicate the UI — generate ORIGINAL questions, never copy (ACT, Inc. copyright). Reading PDFs needs the `pdf` skill or a Python env (pypdf/pdfplumber); poppler/Python were absent on the original Windows PC.
+
+Also pending: an **AI verification pass** (a 2nd model re-solves each generated question, drop disagreements) for correctness — owner has an OpenAI key.
+
+## Conventions / gotchas
+
+- Owner is non-technical: explain in plain language; he drives Stripe/Vercel/Namecheap dashboards (give all steps at once — he prefers consolidated messages).
+- AI calls Claude from the browser only for the local-key dev path; production uses the serverless proxy. Never ship a real key in a `VITE_` var.
+- Vercel holds only LIVE Stripe keys; testing in Stripe sandbox needs a preview env with test keys or a real-card + refund.
+- Owner's own account shows Pro from earlier test-mode setup.
