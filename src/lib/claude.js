@@ -93,7 +93,7 @@ async function generateDirect({ test, subject, apiKey, signal }) {
     response = await client.messages.create(
       {
         model: MODEL,
-        max_tokens: 4000,
+        max_tokens: 8000,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: buildPrompt(test, subject) }],
         output_config: {

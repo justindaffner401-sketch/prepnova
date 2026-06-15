@@ -24,12 +24,20 @@ const TESTS = [
   },
 ];
 
-const SUBJECTS = [
-  { id: "Math", icon: Sigma, blurb: "Algebra, geometry, trig & problem solving" },
-  { id: "English", icon: PenLine, blurb: "Grammar, punctuation & rhetorical skills" },
-  { id: "Reading", icon: BookOpen, blurb: "Comprehension, inference & evidence" },
-  { id: "Science", icon: Flask, blurb: "Charts, experiments & data reasoning" },
-];
+// The ACT has four sections; the digital SAT has two (Math and a combined
+// Reading & Writing section we label "English").
+const SUBJECTS_BY_TEST = {
+  ACT: [
+    { id: "English", icon: PenLine, blurb: "Grammar & rhetoric within a passage" },
+    { id: "Math", icon: Sigma, blurb: "Algebra, geometry, trig & problem solving" },
+    { id: "Reading", icon: BookOpen, blurb: "Comprehension, inference & evidence" },
+    { id: "Science", icon: Flask, blurb: "Charts, experiments & data reasoning" },
+  ],
+  SAT: [
+    { id: "Math", icon: Sigma, blurb: "Algebra, advanced math & problem solving" },
+    { id: "English", icon: BookOpen, blurb: "Reading & Writing — comprehension + grammar" },
+  ],
+};
 
 export default function SubjectSelect() {
   const navigate = useNavigate();
@@ -43,6 +51,15 @@ export default function SubjectSelect() {
   }, []);
 
   const ready = Boolean(test && subject);
+  const subjects = test ? (SUBJECTS_BY_TEST[test] ?? []) : [];
+
+  function chooseTest(id) {
+    setTest(id);
+    // Drop a subject that doesn't exist for the new test (e.g. SAT has no Science).
+    if (subject && !(SUBJECTS_BY_TEST[id] ?? []).some((s) => s.id === subject)) {
+      setSubject(null);
+    }
+  }
 
   function start() {
     if (!ready || launching) return;
@@ -74,7 +91,7 @@ export default function SubjectSelect() {
               <button
                 key={t.id}
                 type="button"
-                onClick={() => setTest(t.id)}
+                onClick={() => chooseTest(t.id)}
                 aria-pressed={active}
                 className={`group relative rounded-2xl border p-6 text-left transition-all duration-200 ${
                   active
@@ -110,7 +127,7 @@ export default function SubjectSelect() {
           </h2>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            {SUBJECTS.map((s) => {
+            {subjects.map((s) => {
               const active = subject === s.id;
               return (
                 <button
