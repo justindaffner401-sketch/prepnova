@@ -42,6 +42,40 @@ const BANKS = {
       explanation:
         "Substitute carefully: (-2)^2 = 4 and -3(-2) = +6, so f(-2) = 4 + 6 = 10. The trap answer -10 comes from two sign errors at once — treating (-2)^2 as -4 and -3(-2) as -6. Squaring a negative always gives a positive, and a negative times a negative is positive.",
     },
+    {
+      question:
+        "In the right triangle shown, the two legs measure 6 and 8 units. What is the length of the hypotenuse?",
+      choices: ["10", "12", "14", "48"],
+      answerIndex: 0,
+      explanation:
+        "By the Pythagorean theorem, the hypotenuse is sqrt(6^2 + 8^2) = sqrt(36 + 64) = sqrt(100) = 10. Adding the legs gives 14 and multiplying them gives 48 — neither is how the sides of a right triangle relate.",
+      figure: {
+        kind: "geometry",
+        polygons: [
+          {
+            points: [
+              { x: 0, y: 0 },
+              { x: 6, y: 0 },
+              { x: 0, y: 8 },
+            ],
+            closed: true,
+          },
+        ],
+        circles: [],
+        curves: [],
+        labels: [
+          { x: 3, y: -0.7, text: "6" },
+          { x: -0.8, y: 4, text: "8" },
+          { x: 3.6, y: 4.4, text: "?" },
+          { x: 0.7, y: 0.7, text: "□" },
+        ],
+        showAxes: false,
+        xMin: -1.5,
+        xMax: 7,
+        yMin: -1.5,
+        yMax: 9,
+      },
+    },
   ],
 
   English: [
@@ -758,6 +792,7 @@ export function getSampleQuestions(subject) {
       choices: order.map((i) => q.choices[i]),
       answerIndex: order.indexOf(q.answerIndex),
       explanation: q.explanation,
+      ...(q.figure ? { figure: q.figure } : {}),
     };
   });
 }

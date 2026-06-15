@@ -4,6 +4,7 @@ import TimerRing from "../components/TimerRing.jsx";
 import PassageRunner from "../components/PassageRunner.jsx";
 import ReadingRunner from "../components/ReadingRunner.jsx";
 import WritingRunner from "../components/WritingRunner.jsx";
+import MathFigure from "../components/MathFigure.jsx";
 import {
   generatePassage,
   generateQuestions,
@@ -609,6 +610,12 @@ export default function Practice() {
             <p className="mt-3 leading-relaxed font-medium whitespace-pre-line text-white sm:text-lg">
               {question.question}
             </p>
+
+            {question.figure && (
+              <div className="mt-4">
+                <MathFigure figure={question.figure} />
+              </div>
+            )}
 
             {revealed && answers[answers.length - 1]?.timedOut && (
               <p className="mt-4 flex items-center gap-2 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-2.5 text-sm font-medium text-amber-300">

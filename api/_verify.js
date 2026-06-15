@@ -11,7 +11,7 @@
 // lives only in the serverless environment (set it in Vercel → Project →
 // Settings → Environment Variables); it is never sent to the browser.
 
-import { readingContextText, renumberPassage } from "../src/lib/questionSpec.js";
+import { mathFigureToText, readingContextText, renumberPassage } from "../src/lib/questionSpec.js";
 
 const VERIFY_MODEL = process.env.OPENAI_VERIFY_MODEL || "gpt-4o-mini";
 const VERIFY_TIMEOUT_MS = 30_000;
@@ -93,8 +93,13 @@ function agrees(map, id, question) {
 // actually ran AND the returned set is the one it approved.
 export async function verifyMcq(questions) {
   if (!verifierEnabled() || questions.length === 0) return { verified: false, questions };
-  const items = questions.map((q, i) => ({ id: i, question: q.question, choices: q.choices }));
-  const user = `For each multiple-choice question below, solve it independently and choose the single best answer.
+  const items = questions.map((q, i) => {
+    const item = { id: i, question: q.question, choices: q.choices };
+    const fig = q.figure ? mathFigureToText(q.figure) : "";
+    if (fig) item.figure = fig;
+    return item;
+  });
+  const user = `For each multiple-choice question below, solve it independently and choose the single best answer. Some questions include a "figure" describing a diagram or graph (coordinates with y up) — use it.
 
 Return ONLY JSON shaped exactly like {"answers":[{"id":0,"choice":2}]} — one entry per id, where "choice" is the 0-based index of the correct choice.
 

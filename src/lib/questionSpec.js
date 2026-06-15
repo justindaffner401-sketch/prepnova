@@ -37,11 +37,85 @@ export function isWritingMode(test, subject) {
 export const SYSTEM_PROMPT =
   "You are PrepNova's question engine — an expert ACT and SAT tutor who writes realistic, test-accurate multiple-choice practice questions with explanations that genuinely teach the underlying concept.";
 
+// Optional figure attached to a math question. One uniform shape (no
+// discriminated unions, so structured output stays reliable): the model fills
+// the arrays it needs for a geometry diagram (polygons/circles + labels) or a
+// coordinate plot (curves + axes) and leaves the rest empty. All coordinates
+// live in one math plane bounded by [xMin,xMax] x [yMin,yMax]; the renderer
+// flips y so up is positive.
+const POINT_SCHEMA = {
+  type: "object",
+  properties: { x: { type: "number" }, y: { type: "number" } },
+  required: ["x", "y"],
+  additionalProperties: false,
+};
+export const MATH_FIGURE_SCHEMA = {
+  type: "object",
+  properties: {
+    kind: { type: "string" }, // "geometry" | "plot"
+    polygons: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          points: { type: "array", items: POINT_SCHEMA },
+          closed: { type: "boolean" },
+        },
+        required: ["points", "closed"],
+        additionalProperties: false,
+      },
+    },
+    circles: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          cx: { type: "number" },
+          cy: { type: "number" },
+          r: { type: "number" },
+        },
+        required: ["cx", "cy", "r"],
+        additionalProperties: false,
+      },
+    },
+    curves: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { points: { type: "array", items: POINT_SCHEMA } },
+        required: ["points"],
+        additionalProperties: false,
+      },
+    },
+    labels: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          x: { type: "number" },
+          y: { type: "number" },
+          text: { type: "string" },
+        },
+        required: ["x", "y", "text"],
+        additionalProperties: false,
+      },
+    },
+    showAxes: { type: "boolean" },
+    xMin: { type: "number" },
+    xMax: { type: "number" },
+    yMin: { type: "number" },
+    yMax: { type: "number" },
+  },
+  required: ["kind", "polygons", "circles", "curves", "labels", "showAxes", "xMin", "xMax", "yMin", "yMax"],
+  additionalProperties: false,
+};
+
 // Structured-output schema. Each choice carries its OWN `correct` flag rather
 // than a separate answerIndex the model has to count — this keeps the marked
 // answer and the explanation from drifting apart (LLMs reliably mark the right
-// choice inline, but frequently miscount a separate index). Lengths (5
-// questions, 4 choices, exactly one correct) are enforced in validateQuestions.
+// choice inline, but frequently miscount a separate index). Lengths (4-5
+// choices, exactly one correct) are enforced in validateQuestions. `figure` is
+// OPTIONAL (math questions only) and omitted when no diagram is needed.
 export const QUESTIONS_SCHEMA = {
   type: "object",
   properties: {
@@ -64,6 +138,7 @@ export const QUESTIONS_SCHEMA = {
             },
           },
           explanation: { type: "string" },
+          figure: MATH_FIGURE_SCHEMA,
         },
         required: ["question", "choices", "explanation"],
         additionalProperties: false,
@@ -104,12 +179,87 @@ ${topics}
 A calculator is permitted, so realistic computation is fine. Spread difficulty from easy to hard, including at least one challenging question.
 
 Rules:
-- Each question is fully self-contained in its "question" text (describe any figure in words for now — e.g., "a right triangle with legs 6 and 8").
+- When a question involves a geometric shape or a coordinate graph, ADD a "figure" object so the student sees a diagram:
+  - Put every coordinate in ONE math plane (y is up). Set xMin/xMax/yMin/yMax to frame the drawing with a small margin.
+  - kind "geometry" for shapes: a triangle/rectangle is one entry in "polygons" (points listed in order, closed=true); use "circles" for circles; use "labels" to place side lengths, angle measures (e.g., "30°"), and vertex names ("A") near the right spot. Leave "curves" empty and "showAxes" false.
+  - kind "plot" for graphs: put each line/parabola in "curves" as a list of points along it; set "showAxes" true; use "labels" for marked points. Leave "polygons" and "circles" empty.
+  - Keep figures simple and numerically consistent with the question. OMIT "figure" entirely for questions that need no picture.
+- Always state the key measurements in the "question" text too, so the item is solvable even if the image fails to load.
 - Exactly ${choiceCount} answer choices per question (${isACT ? "ACT Math has five" : "the SAT has four"}). Each choice is an object { "text": "...", "correct": true|false }.
 - ACTUALLY SOLVE each problem first. Mark exactly ONE choice "correct": true and verify it; make the wrong choices reflect common mistakes (sign errors, off-by-one, using the wrong formula, forgetting a step) rather than random values.
 - Spread the correct answer across different positions.
 - "explanation": 2-4 sentences showing the key steps to the answer and naming the most tempting wrong choice's mistake. Refer to choices by their values, never by letter or position.
 - Plain text only: no markdown, no LaTeX. Write math like "3x + 5 = 20", fractions like "3/4", and exponents like "x^2".`;
+}
+
+// Normalize a math figure from the model, dropping anything malformed. Returns
+// a clean figure or null if there's nothing renderable.
+export function sanitizeMathFigure(f) {
+  if (!f || typeof f !== "object") return null;
+  const pts = (arr) =>
+    (Array.isArray(arr) ? arr : [])
+      .filter((p) => Number.isFinite(p?.x) && Number.isFinite(p?.y))
+      .map((p) => ({ x: p.x, y: p.y }));
+  const polygons = (Array.isArray(f.polygons) ? f.polygons : [])
+    .map((p) => ({ points: pts(p?.points), closed: p?.closed !== false }))
+    .filter((p) => p.points.length >= 2);
+  const circles = (Array.isArray(f.circles) ? f.circles : [])
+    .filter((c) => Number.isFinite(c?.cx) && Number.isFinite(c?.cy) && Number.isFinite(c?.r) && c.r > 0)
+    .map((c) => ({ cx: c.cx, cy: c.cy, r: c.r }));
+  const curves = (Array.isArray(f.curves) ? f.curves : [])
+    .map((c) => ({ points: pts(c?.points) }))
+    .filter((c) => c.points.length >= 2);
+  const labels = (Array.isArray(f.labels) ? f.labels : [])
+    .filter((l) => Number.isFinite(l?.x) && Number.isFinite(l?.y) && typeof l?.text === "string" && l.text.trim())
+    .map((l) => ({ x: l.x, y: l.y, text: l.text.trim() }));
+  if (polygons.length === 0 && circles.length === 0 && curves.length === 0) return null;
+
+  // Bounds: use the model's if sane, else derive from the geometry.
+  const xs = [];
+  const ys = [];
+  for (const p of polygons) p.points.forEach((pt) => (xs.push(pt.x), ys.push(pt.y)));
+  for (const c of circles) (xs.push(c.cx - c.r, c.cx + c.r), ys.push(c.cy - c.r, c.cy + c.r));
+  for (const c of curves) c.points.forEach((pt) => (xs.push(pt.x), ys.push(pt.y)));
+  labels.forEach((l) => (xs.push(l.x), ys.push(l.y)));
+  const dataMinX = Math.min(...xs);
+  const dataMaxX = Math.max(...xs);
+  const dataMinY = Math.min(...ys);
+  const dataMaxY = Math.max(...ys);
+  const num = (v, fb) => (Number.isFinite(v) ? v : fb);
+  let xMin = Math.min(num(f.xMin, dataMinX), dataMinX);
+  let xMax = Math.max(num(f.xMax, dataMaxX), dataMaxX);
+  let yMin = Math.min(num(f.yMin, dataMinY), dataMinY);
+  let yMax = Math.max(num(f.yMax, dataMaxY), dataMaxY);
+  if (xMax - xMin < 1e-6) ((xMin -= 1), (xMax += 1));
+  if (yMax - yMin < 1e-6) ((yMin -= 1), (yMax += 1));
+
+  return {
+    kind: f.kind === "plot" ? "plot" : "geometry",
+    polygons,
+    circles,
+    curves,
+    labels,
+    showAxes: f.showAxes === true || f.kind === "plot",
+    xMin,
+    xMax,
+    yMin,
+    yMax,
+  };
+}
+
+// Compact text description of a figure, for the verifier and any non-visual use.
+export function mathFigureToText(f) {
+  if (!f) return "";
+  const parts = [];
+  f.polygons?.forEach((p) =>
+    parts.push(`polygon[${p.points.map((pt) => `(${pt.x},${pt.y})`).join(" ")}]`),
+  );
+  f.circles?.forEach((c) => parts.push(`circle(center (${c.cx},${c.cy}), r=${c.r})`));
+  f.curves?.forEach((c) =>
+    parts.push(`curve[${c.points.map((pt) => `(${pt.x},${pt.y})`).join(" ")}]`),
+  );
+  f.labels?.forEach((l) => parts.push(`label "${l.text}" at (${l.x},${l.y})`));
+  return parts.length ? `Figure (${f.kind}): ${parts.join("; ")}` : "";
 }
 
 export function validateQuestions(text) {
@@ -139,11 +289,13 @@ export function validateQuestions(text) {
       .filter((i) => i !== -1);
     if (correctIndexes.length !== 1) continue;
 
+    const figure = sanitizeMathFigure(q.figure);
     cleaned.push({
       question: q.question,
       choices: texts,
       answerIndex: correctIndexes[0],
       explanation: q.explanation,
+      ...(figure ? { figure } : {}),
     });
   }
 

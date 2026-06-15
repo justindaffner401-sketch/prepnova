@@ -39,6 +39,7 @@ vars (Stripe/Supabase/Anthropic) which are set in the Vercel dashboard, not in t
 - `src/lib/entitlement.js` — `isEntitled(sub)` shared by client (`useAuth`) + server gate.
 - `src/lib/claude.js` — browser-direct generation (dev/local key path).
 - `src/lib/demoQuestions.js` — free sample questions (shuffled; answers verified correct).
+- **Math figures:** math questions may carry an optional `figure` (`MATH_FIGURE_SCHEMA`, sanitized by `sanitizeMathFigure`) — geometry shapes (polygons/circles + labels) or coordinate plots (curves + axes). Rendered by `src/components/MathFigure.jsx` (one math plane, y flipped up). `buildMathPrompt` asks for one only when a question needs a diagram. `ChartFigure.jsx` renders categorical bar/line charts for Reading graph passages.
 - `api/` — Vercel serverless: `generate-questions.js` (Pro-gated, rate-limited), `create-checkout-session.js`, `create-portal-session.js`, `stripe-webhook.js`.
 
 ## Status — what's done
