@@ -53,15 +53,29 @@ export async function POST(request) {
         if (!session.client_reference_id) break;
 
         if (session.mode === "payment") {
-          // Lifetime one-time purchase — never expires.
-          await supabase.from("subscriptions").upsert({
-            user_id: session.client_reference_id,
-            stripe_customer_id: session.customer,
-            stripe_subscription_id: null,
-            status: "lifetime",
-            current_period_end: null,
-            updated_at: new Date().toISOString(),
-          });
+          // One-time purchase: "lifetime" (never expires) or "year" (expires
+          // a year out). We set the expiry ourselves — no renewal webhook fires.
+          const oneTimePlan = session.metadata?.plan;
+          let status = null;
+          let currentPeriodEnd = null;
+          if (oneTimePlan === "lifetime") {
+            status = "lifetime";
+          } else if (oneTimePlan === "year") {
+            status = "year";
+            const end = new Date();
+            end.setFullYear(end.getFullYear() + 1);
+            currentPeriodEnd = end.toISOString();
+          }
+          if (status) {
+            await supabase.from("subscriptions").upsert({
+              user_id: session.client_reference_id,
+              stripe_customer_id: session.customer,
+              stripe_subscription_id: null,
+              status,
+              current_period_end: currentPeriodEnd,
+              updated_at: new Date().toISOString(),
+            });
+          }
         } else if (session.mode === "subscription") {
           const subscription = await stripe.subscriptions.retrieve(session.subscription);
           await supabase.from("subscriptions").upsert({

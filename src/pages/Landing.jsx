@@ -239,66 +239,72 @@ export default function Landing() {
         <div className="container-pn py-20 sm:py-24">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              Simple pricing. <span className="text-gradient">Start free.</span>
+              Choose your <span className="text-gradient">plan</span>
             </h2>
             <p className="mt-4 text-slate-400">
               Unlimited AI-powered practice across both tests and every subject.
-              Try it free for 7 days — or pay once and keep it forever.
+              Start free — or save big with a longer plan.
             </p>
           </div>
 
-          <div className="mx-auto mt-12 grid max-w-3xl gap-5 sm:grid-cols-2">
+          {/* Every plan includes */}
+          <ul className="mx-auto mt-8 flex max-w-3xl flex-wrap justify-center gap-x-6 gap-y-2">
+            {PREPNOVA_PERKS.map((perk) => (
+              <li key={perk} className="flex items-center gap-2 text-sm text-slate-300">
+                <Check className="h-4 w-4 shrink-0 text-emerald-400" />
+                {perk}
+              </li>
+            ))}
+          </ul>
+
+          {/* Plans */}
+          <div className="mx-auto mt-10 grid max-w-4xl items-stretch gap-5 md:grid-cols-3">
             {/* Monthly */}
-            <div className="glass flex flex-col p-7">
+            <div className="glass flex flex-col p-6">
               <p className="font-display font-bold text-white">Monthly</p>
               <p className="mt-3">
-                <span className="font-display text-5xl font-extrabold text-white">$29</span>
-                <span className="ml-1 text-sm text-slate-300">/month</span>
+                <span className="font-display text-4xl font-extrabold text-white">$29</span>
+                <span className="ml-1 text-sm text-slate-300">/mo</span>
               </p>
-              <p className="mt-2 text-xs text-electric-200/90">
-                Starts with a 7-day free trial.
-              </p>
-              <ul className="mt-5 flex-1 space-y-2.5">
-                {PREPNOVA_PERKS.map((perk) => (
-                  <li key={perk} className="flex items-start gap-2.5 text-sm text-slate-200">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-                    {perk}
-                  </li>
-                ))}
-              </ul>
+              <p className="mt-2 text-xs text-electric-200/90">7-day free trial included.</p>
+              <div className="flex-1" />
               <Link to={authEnabled ? "/account" : "/select"} className="btn-ghost mt-6 w-full">
                 Start free trial
               </Link>
             </div>
 
-            {/* Lifetime */}
-            <div className="relative flex flex-col rounded-2xl border border-electric-400/50 bg-gradient-to-b from-electric-500/15 to-cyan-400/5 p-7 shadow-[0_0_60px_rgba(59,130,246,0.18)]">
+            {/* 1 Year — featured */}
+            <div className="relative flex flex-col rounded-2xl border border-electric-400/50 bg-gradient-to-b from-electric-500/15 to-cyan-400/5 p-6 shadow-[0_0_60px_rgba(59,130,246,0.18)] md:-mt-2">
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-electric-500 to-cyan-400 px-3 py-1 font-display text-[11px] font-bold tracking-wide text-white">
                 BEST VALUE
               </span>
-              <p className="font-display font-bold text-white">Lifetime</p>
+              <p className="font-display font-bold text-white">1 Year</p>
               <p className="mt-3">
-                <span className="font-display text-5xl font-extrabold text-white">$200</span>
+                <span className="font-display text-4xl font-extrabold text-white">$250</span>
                 <span className="ml-1 text-sm text-slate-300">once</span>
               </p>
               <p className="mt-2 text-xs text-electric-200/90">
-                <span className="text-slate-500 line-through">$261 value</span> — save $61, then
-                never pay again.
+                <span className="text-slate-500 line-through">$348 value</span> — save $98.
               </p>
-              <ul className="mt-5 flex-1 space-y-2.5">
-                {PREPNOVA_PERKS.map((perk) => (
-                  <li key={perk} className="flex items-start gap-2.5 text-sm text-slate-200">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-                    {perk}
-                  </li>
-                ))}
-                <li className="flex items-start gap-2.5 text-sm text-slate-200">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-                  No recurring charges, ever
-                </li>
-              </ul>
+              <div className="flex-1" />
               <Link to={authEnabled ? "/account" : "/select"} className="btn-primary mt-6 w-full">
-                Get lifetime access
+                Get 1 year
+              </Link>
+            </div>
+
+            {/* Lifetime */}
+            <div className="glass flex flex-col p-6">
+              <p className="font-display font-bold text-white">Lifetime</p>
+              <p className="mt-3">
+                <span className="font-display text-4xl font-extrabold text-white">$600</span>
+                <span className="ml-1 text-sm text-slate-300">once</span>
+              </p>
+              <p className="mt-2 text-xs text-electric-200/90">
+                Yours forever. Younger siblings? Pass it down when they're ready.
+              </p>
+              <div className="flex-1" />
+              <Link to={authEnabled ? "/account" : "/select"} className="btn-ghost mt-6 w-full">
+                Get lifetime
               </Link>
             </div>
           </div>

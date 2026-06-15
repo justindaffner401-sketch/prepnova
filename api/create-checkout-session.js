@@ -15,6 +15,7 @@ export default async function handler(req, res) {
   const {
     STRIPE_SECRET_KEY,
     STRIPE_PRICE_ID,
+    STRIPE_YEAR_PRICE_ID,
     STRIPE_LIFETIME_PRICE_ID,
     SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY,
@@ -23,9 +24,13 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: "Billing isn't configured on this deployment yet." });
   }
 
-  const plan = req.body?.plan === "lifetime" ? "lifetime" : "monthly";
-  if (plan === "lifetime" && !STRIPE_LIFETIME_PRICE_ID) {
-    return res.status(503).json({ error: "The lifetime plan isn't available yet." });
+  const plan = ["monthly", "year", "lifetime"].includes(req.body?.plan)
+    ? req.body.plan
+    : "monthly";
+  const oneTimePriceId =
+    plan === "year" ? STRIPE_YEAR_PRICE_ID : plan === "lifetime" ? STRIPE_LIFETIME_PRICE_ID : null;
+  if (plan !== "monthly" && !oneTimePriceId) {
+    return res.status(503).json({ error: "That plan isn't available yet." });
   }
 
   const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
@@ -77,20 +82,20 @@ export default async function handler(req, res) {
     };
 
     const params =
-      plan === "lifetime"
+      plan === "monthly"
         ? {
-            ...common,
-            mode: "payment",
-            line_items: [{ price: STRIPE_LIFETIME_PRICE_ID, quantity: 1 }],
-            payment_intent_data: {
-              metadata: { plan: "lifetime", supabase_user_id: user.id },
-            },
-          }
-        : {
             ...common,
             mode: "subscription",
             line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
             subscription_data: { trial_period_days: TRIAL_DAYS },
+          }
+        : {
+            ...common,
+            mode: "payment",
+            line_items: [{ price: oneTimePriceId, quantity: 1 }],
+            // The webhook reads metadata.plan to set "year" vs "lifetime".
+            metadata: { plan },
+            payment_intent_data: { metadata: { plan, supabase_user_id: user.id } },
           };
 
     const session = await stripe.checkout.sessions.create(params);

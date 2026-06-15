@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { authEnabled, supabase } from "../lib/supabase.js";
 import { useAuth } from "../lib/useAuth.js";
+import { isEntitled } from "../lib/entitlement.js";
 import {
   AlertTriangle,
   ArrowRight,
@@ -58,7 +59,7 @@ export default function Account() {
     const id = setInterval(async () => {
       attempts += 1;
       const sub = await refreshSubscription();
-      if (["active", "trialing", "past_due"].includes(sub?.status) || attempts >= 8) {
+      if (isEntitled(sub) || attempts >= 8) {
         clearInterval(id);
       }
     }, 1500);
@@ -171,7 +172,10 @@ export default function Account() {
       })
     : null;
   const isLifetime = subscription?.status === "lifetime";
+  const isYear = subscription?.status === "year";
   const isTrial = subscription?.status === "trialing";
+  // One-time plans (year/lifetime) have no Stripe subscription to manage.
+  const isOneTime = isLifetime || isYear;
 
   return (
     <main className="container-pn pt-28 pb-20 sm:pt-36">
@@ -307,7 +311,8 @@ export default function Account() {
             {subscribed ? (
               <div className="glass border-electric-400/40 p-7">
                 <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-electric-500 to-cyan-400 px-3.5 py-1.5 font-display text-xs font-bold text-white">
-                  <Sparkles className="h-3.5 w-3.5" /> PREPNOVA PRO{isLifetime ? " · LIFETIME" : ""}
+                  <Sparkles className="h-3.5 w-3.5" /> PREPNOVA PRO
+                  {isLifetime ? " · LIFETIME" : isYear ? " · 1 YEAR" : ""}
                 </span>
                 <h1 className="mt-4 font-display text-2xl font-extrabold text-white">
                   You're all set.
@@ -315,6 +320,7 @@ export default function Account() {
                 <p className="mt-2 text-sm leading-relaxed text-slate-400">
                   Unlimited AI-generated questions across every subject.
                   {isLifetime && " Lifetime access — yours forever, no renewals."}
+                  {isYear && renewDate && ` 1-year access — runs through ${renewDate}.`}
                   {isTrial && renewDate && ` Free trial active — your first $29 charge is ${renewDate}.`}
                   {subscription?.status === "active" && renewDate && ` Renews ${renewDate}.`}
                   {subscription?.status === "past_due" && (
@@ -328,7 +334,7 @@ export default function Account() {
                   <Link to="/select" className="btn-primary flex-1">
                     <Bolt className="h-4 w-4" /> Start practicing
                   </Link>
-                  {!isLifetime && (
+                  {!isOneTime && (
                     <button
                       type="button"
                       onClick={openPortal}
@@ -371,34 +377,58 @@ export default function Account() {
                       type="button"
                       onClick={() => startCheckout("monthly")}
                       disabled={busy}
-                      className="btn-primary mt-4 w-full disabled:opacity-50"
+                      className="btn-ghost mt-4 w-full disabled:opacity-50"
                     >
                       {busy ? "Opening checkout…" : "Start 7-day free trial"}
                     </button>
                   </div>
 
-                  {/* Lifetime */}
+                  {/* 1 Year — featured */}
                   <div className="relative rounded-xl border border-electric-400/50 bg-gradient-to-b from-electric-500/15 to-cyan-400/5 p-5">
                     <span className="absolute -top-2.5 right-4 rounded-full bg-gradient-to-r from-electric-500 to-cyan-400 px-2.5 py-0.5 font-display text-[10px] font-bold tracking-wide text-white">
                       BEST VALUE
                     </span>
                     <div className="flex items-baseline justify-between">
-                      <span className="font-display font-bold text-white">Lifetime</span>
+                      <span className="font-display font-bold text-white">1 Year</span>
                       <span>
-                        <span className="font-display text-2xl font-extrabold text-white">$200</span>
+                        <span className="font-display text-2xl font-extrabold text-white">$250</span>
                         <span className="text-sm text-slate-400"> once</span>
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-electric-200/90">
-                      Pay once, own it forever — save $61 vs 9 months of monthly.
+                      <span className="text-slate-500 line-through">$348 value</span> — save $98 over
+                      a full year.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => startCheckout("year")}
+                      disabled={busy}
+                      className="btn-primary mt-4 w-full disabled:opacity-50"
+                    >
+                      {busy ? "Opening checkout…" : "Get 1 year"}
+                    </button>
+                  </div>
+
+                  {/* Lifetime */}
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+                    <div className="flex items-baseline justify-between">
+                      <span className="font-display font-bold text-white">Lifetime</span>
+                      <span>
+                        <span className="font-display text-2xl font-extrabold text-white">$600</span>
+                        <span className="text-sm text-slate-400"> once</span>
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-electric-200/90">
+                      Pay once, yours forever. Younger siblings? Pass it down when they're ready for
+                      the test.
                     </p>
                     <button
                       type="button"
                       onClick={() => startCheckout("lifetime")}
                       disabled={busy}
-                      className="btn-primary mt-4 w-full disabled:opacity-50"
+                      className="btn-ghost mt-4 w-full disabled:opacity-50"
                     >
-                      {busy ? "Opening checkout…" : "Get lifetime access"}
+                      {busy ? "Opening checkout…" : "Get lifetime"}
                     </button>
                   </div>
                 </div>

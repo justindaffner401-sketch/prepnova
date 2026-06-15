@@ -13,6 +13,7 @@ import {
   buildPrompt,
   validateQuestions,
 } from "../src/lib/questionSpec.js";
+import { isEntitled } from "../src/lib/entitlement.js";
 
 /* ---------------- Rate limiting ----------------
  * In-memory, per warm function instance. Counters aren't shared across
@@ -89,11 +90,10 @@ export default async function handler(req, res) {
     }
     const { data: sub } = await supabase
       .from("subscriptions")
-      .select("status")
+      .select("status, current_period_end")
       .eq("user_id", userData.user.id)
       .maybeSingle();
-    const isSubscribed = ["active", "trialing", "past_due"].includes(sub?.status);
-    if (!isSubscribed) {
+    if (!isEntitled(sub)) {
       return res.status(402).json({
         error:
           "AI question generation is part of PrepNova Pro ($29/mo). Upgrade on your account page — the sample set stays free.",

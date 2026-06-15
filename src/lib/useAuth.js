@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase.js";
-
-const ACTIVE_STATUSES = ["active", "trialing", "past_due", "lifetime"];
+import { isEntitled } from "./entitlement.js";
 
 /**
  * Auth + subscription state. Safe to call when Supabase isn't configured —
@@ -45,7 +44,7 @@ export function useAuth() {
     user: session?.user ?? null,
     session,
     subscription,
-    subscribed: ACTIVE_STATUSES.includes(subscription?.status),
+    subscribed: isEntitled(subscription),
     loading,
     refreshSubscription: () => fetchSubscription(session),
   };
