@@ -1,9 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk";
 import {
   MODEL,
+  PASSAGE_SCHEMA,
   QUESTIONS_SCHEMA,
   SYSTEM_PROMPT,
+  buildPassagePrompt,
   buildPrompt,
+  validatePassageSet,
   validateQuestions,
 } from "./questionSpec.js";
 import { supabase } from "./supabase.js";
@@ -23,13 +26,24 @@ export { MODEL };
  */
 export async function generateQuestions({ test, subject, apiKey, signal }) {
   return apiKey
-    ? generateDirect({ test, subject, apiKey, signal })
-    : generateViaProxy({ test, subject, signal });
+    ? generateDirect({ test, subject, apiKey, signal, mode: "mcq" })
+    : generateViaProxy({ test, subject, signal, mode: "mcq" });
+}
+
+/**
+ * Generate one passage + its grouped questions (exam-replica format).
+ * Same two paths as generateQuestions. Returns the validated passage set
+ * { title, segments, questions }.
+ */
+export async function generatePassage({ test, subject, apiKey, signal }) {
+  return apiKey
+    ? generateDirect({ test, subject, apiKey, signal, mode: "passage" })
+    : generateViaProxy({ test, subject, signal, mode: "passage" });
 }
 
 /* ---------------- Server proxy path ---------------- */
 
-async function generateViaProxy({ test, subject, signal }) {
+async function generateViaProxy({ test, subject, signal, mode }) {
   const headers = { "content-type": "application/json" };
   if (supabase) {
     const { data } = await supabase.auth.getSession();
@@ -43,7 +57,7 @@ async function generateViaProxy({ test, subject, signal }) {
     res = await fetch("/api/generate-questions", {
       method: "POST",
       headers,
-      body: JSON.stringify({ test, subject }),
+      body: JSON.stringify({ test, subject, mode }),
       signal,
     });
   } catch (err) {
@@ -69,6 +83,13 @@ async function generateViaProxy({ test, subject, signal }) {
     throw new Error(data?.error || "The question server returned an error. Try again.");
   }
 
+  if (mode === "passage") {
+    if (!data?.passage) {
+      throw new Error("The server didn't return a complete passage. Try again.");
+    }
+    return data.passage;
+  }
+
   const questions = Array.isArray(data?.questions) ? data.questions : [];
   if (questions.length < 5) {
     throw new Error("The server didn't return a complete set of questions. Try again.");
@@ -78,7 +99,7 @@ async function generateViaProxy({ test, subject, signal }) {
 
 /* ---------------- Direct browser path ---------------- */
 
-async function generateDirect({ test, subject, apiKey, signal }) {
+async function generateDirect({ test, subject, apiKey, signal, mode }) {
   const client = new Anthropic({
     apiKey,
     // Required for direct browser calls. The key stays on this device; the
@@ -88,6 +109,7 @@ async function generateDirect({ test, subject, apiKey, signal }) {
     timeout: 90_000,
   });
 
+  const passage = mode === "passage";
   let response;
   try {
     response = await client.messages.create(
@@ -95,9 +117,19 @@ async function generateDirect({ test, subject, apiKey, signal }) {
         model: MODEL,
         max_tokens: 8000,
         system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: buildPrompt(test, subject) }],
+        messages: [
+          {
+            role: "user",
+            content: passage
+              ? buildPassagePrompt(test, subject)
+              : buildPrompt(test, subject),
+          },
+        ],
         output_config: {
-          format: { type: "json_schema", schema: QUESTIONS_SCHEMA },
+          format: {
+            type: "json_schema",
+            schema: passage ? PASSAGE_SCHEMA : QUESTIONS_SCHEMA,
+          },
         },
       },
       { signal },
@@ -115,7 +147,7 @@ async function generateDirect({ test, subject, apiKey, signal }) {
   }
 
   const text = response.content.find((block) => block.type === "text")?.text ?? "";
-  return validateQuestions(text);
+  return passage ? validatePassageSet(text) : validateQuestions(text);
 }
 
 function friendlyError(err) {

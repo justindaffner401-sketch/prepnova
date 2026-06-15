@@ -31,10 +31,11 @@ vars (Stripe/Supabase/Anthropic) which are set in the Vercel dashboard, not in t
 - `src/pages/Landing.jsx` — landing (hero, Why Us cost comparison `src/components/WhyUs.jsx`, 3-tier pricing).
 - `src/pages/SubjectSelect.jsx` — pick test then subject. `SUBJECTS_BY_TEST`: ACT=English/Math/Reading/Science, SAT=Math/English. Fires `PortalTransition` on start.
 - `src/components/PortalTransition.jsx` + portal CSS in `src/index.css` — ~5s colorful portal animation.
-- `src/pages/Practice.jsx` — practice session: 5 MCQs, 60s timer, explanations. `CalculatorWidget` (Desmos) shows for Math.
+- `src/pages/Practice.jsx` — practice session shell (intro/loading/error/results). For most subjects: 5 MCQs, 60s timer, explanations, `CalculatorWidget` (Desmos) on Math. **For ACT English it branches into passage mode** (`isPassageMode`) and renders `PassageRunner` instead.
+- `src/components/PassageRunner.jsx` — exam-replica runner: pinned passage with numbered **underlined spans**, answer-as-you-go question panel, count-up timer, click-a-span-to-navigate. Two-column on `lg`, stacked on mobile.
 - `src/pages/Progress.jsx` — localStorage score tracker + SVG chart.
 - `src/pages/Account.jsx` — auth (Supabase), plan selector, Stripe checkout. `src/pages/ResetPassword.jsx`.
-- `src/lib/questionSpec.js` — SHARED by client + server: prompt, structured-output schema, `validateQuestions`. **Each choice has `{text, correct}` (no separate answerIndex) — this prevents the answer/explanation mismatch.**
+- `src/lib/questionSpec.js` — SHARED by client + server. MCQ path: `buildPrompt`, `QUESTIONS_SCHEMA`, `validateQuestions`. Passage path: `buildPassagePrompt`, `PASSAGE_SCHEMA`, `validatePassageSet`, `isPassageMode`. **Each choice has `{text, correct}` (no separate answerIndex) — this prevents the answer/explanation mismatch.** Passage segments are uniform `{text, underline, ref}` (no discriminated unions, for reliable structured output); the validator renumbers underlines/questions to a clean 1..N.
 - `src/lib/entitlement.js` — `isEntitled(sub)` shared by client (`useAuth`) + server gate.
 - `src/lib/claude.js` — browser-direct generation (dev/local key path).
 - `src/lib/demoQuestions.js` — free sample questions (shuffled; answers verified correct).
@@ -44,11 +45,17 @@ vars (Stripe/Supabase/Anthropic) which are set in the Vercel dashboard, not in t
 
 Built & live: landing/Why-Us/pricing, accounts + Stripe (monthly trial / yearly / lifetime), Supabase auth + Resend password reset, AI question generation (Pro-gated), Desmos calculator on Math, score tracker, Vercel Analytics, portal transition, SEO/OG tags + sitemap.
 
-## Status — PENDING (the big next phase): passage-based exam replica
+## Status — passage-based exam replica (IN PROGRESS)
 
 Practice must look like the real digital ACT/SAT (College Board). Current format is 5 standalone MCQs;
-the redesign groups questions under a shared passage. Spec from the owner:
-- **ACT English:** a passage with grammar/tone/spelling questions; the part each question asks about is **underlined in the passage**; answer as you go. ~5–6 passages × 5–10 Qs.
+the redesign groups questions under a shared passage.
+
+**DONE (slice 1 — ACT English):** one passage per session with numbered underlined spans, answer-as-you-go,
+pinned-passage two-column layout, AI generation (Pro-gated, via the same `/api/generate-questions` proxy with
+`mode:"passage"`) + an offline sample passage (`getSamplePassage`). Verified in-browser end to end.
+
+Spec from the owner (remaining slices):
+- **ACT English:** ✅ done as above. Future polish: passage-level questions not tied to an underline (a boxed number marking a position), and multi-passage sessions (~5–6 passages × 5–10 Qs).
 - **ACT Reading:** read the whole passage, answer about it ("what is the purpose of paragraph X"). 36 Qs, 4 passages; ONE has a graph; ONE is a paired passage split A/B.
 - **SAT English** = Reading & Writing (combined reading + grammar).
 - Big passage + 5–10 related questions grouped; passage stays pinned while answering.

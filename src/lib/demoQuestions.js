@@ -222,6 +222,133 @@ const BANKS = {
   ],
 };
 
+// Built-in ACT English passage so the exam-replica format works without an API
+// key. Already in the shape validatePassageSet() produces, so the UI can render
+// it directly. Choice order is curated (NO CHANGE stays first; correct answers
+// are spread across positions), so this set is intentionally NOT shuffled.
+const SAMPLE_PASSAGE = {
+  title: "Saturdays at the Bike Co-op",
+  segments: [
+    {
+      text: "When I first walked into the neighborhood bike co-op, I only meant to patch a flat tire. ",
+      underline: false,
+      ref: 0,
+    },
+    { text: "Two years later, I was still showing up every Saturday morning.", underline: true, ref: 1 },
+    { text: " The co-op, ", underline: false, ref: 0 },
+    { text: "a cramped garage packed with secondhand parts,", underline: true, ref: 2 },
+    {
+      text: " repaired bicycles for anyone who couldn't pay a shop's prices.\n\nMy first task seemed simple: organize a bin of bolts. ",
+      underline: false,
+      ref: 0,
+    },
+    { text: "Therefore,", underline: true, ref: 3 },
+    {
+      text: " I quickly learned that each bolt had its own thread size, and mixing them up could ruin a repair. The veteran volunteers ",
+      underline: false,
+      ref: 0,
+    },
+    { text: "was", underline: true, ref: 4 },
+    { text: " patient with me, naming each tool as they handed it over. ", underline: false, ref: 0 },
+    { text: "Its", underline: true, ref: 5 },
+    {
+      text: " knowledge, gathered over decades, turned a wall of mysterious metal into something I could read.\n\nBy spring I could true a bent wheel myself, tightening each spoke until the rim spun ",
+      underline: false,
+      ref: 0,
+    },
+    { text: "smooth and silent.", underline: true, ref: 6 },
+    { text: " The work was slow, but it taught me that patience ", underline: false, ref: 0 },
+    { text: "are", underline: true, ref: 7 },
+    { text: " a skill like any other.", underline: false, ref: 0 },
+  ],
+  questions: [
+    {
+      ref: 1,
+      prompt: "Which choice best emphasizes how much longer the narrator stayed than originally planned?",
+      choices: [
+        "NO CHANGE",
+        "Eventually, I wandered back in.",
+        "I returned again the next weekend.",
+        "Time passed, as it usually does.",
+      ],
+      answerIndex: 0,
+      explanation:
+        'Pairing "Two years later" with "still showing up" sets the long stretch against the one-flat-tire plan, which is exactly the contrast the prompt wants. "The next weekend" badly understates the span, and the other options stay vague about how much time passed.',
+    },
+    {
+      ref: 2,
+      prompt: "",
+      choices: [
+        "NO CHANGE",
+        "a cramped garage packed with secondhand parts",
+        "(a cramped garage packed with secondhand parts)",
+        "a cramped garage, packed with secondhand parts",
+      ],
+      answerIndex: 0,
+      explanation:
+        'The phrase is an appositive renaming "the co-op," so it must be closed off by a comma on each side; the opening comma is already in place before it. Dropping the closing comma leaves the aside unclosed, and switching to parentheses clashes with the comma that already opens the interruption.',
+    },
+    {
+      ref: 3,
+      prompt: "",
+      choices: ["NO CHANGE", "For example,", "However,", "Meanwhile,"],
+      answerIndex: 2,
+      explanation:
+        'A task that "seemed simple" turning out to be finicky is a contrast, and "However" signals exactly that reversal. "Therefore" wrongly implies the difficulty was a logical result of the task seeming simple, and "For example" and "Meanwhile" signal relationships the sentences don\'t have.',
+    },
+    {
+      ref: 4,
+      prompt: "",
+      choices: ["NO CHANGE", "were", "is", "has been"],
+      answerIndex: 1,
+      explanation:
+        'The subject "volunteers" is plural, so it needs the plural verb "were." "Was," "is," and "has been" are all singular and clash with a subject naming more than one person.',
+    },
+    {
+      ref: 5,
+      prompt: "",
+      choices: ["NO CHANGE", "There", "They're", "Their"],
+      answerIndex: 3,
+      explanation:
+        'The knowledge belongs to the volunteers — a plural antecedent — so the possessive "Their" is correct. "Its" is singular, "There" indicates a place, and "They\'re" is the contraction of "they are."',
+    },
+    {
+      ref: 6,
+      prompt: "",
+      choices: [
+        "NO CHANGE",
+        "in a smooth and silent way.",
+        "smoothly and silently.",
+        "smooth and silently.",
+      ],
+      answerIndex: 2,
+      explanation:
+        'The words describe how the rim "spun," and adverbs modify verbs, so "smoothly and silently" is correct. "Smooth and silent" are adjectives, the mixed "smooth and silently" is inconsistent, and "in a smooth and silent way" is wordy padding.',
+    },
+    {
+      ref: 7,
+      prompt: "",
+      choices: ["NO CHANGE", "is", "were", "have been"],
+      answerIndex: 1,
+      explanation:
+        'The subject "patience" is singular, so it takes the singular verb "is." "Are," "were," and "have been" are all plural forms that don\'t agree with a single, uncountable quality.',
+    },
+  ],
+};
+
+/**
+ * Returns a fresh copy of the built-in ACT English passage set. Not shuffled —
+ * the curated choice order (NO CHANGE first) and answer spread are part of the
+ * design.
+ */
+export function getSamplePassage() {
+  return {
+    title: SAMPLE_PASSAGE.title,
+    segments: SAMPLE_PASSAGE.segments.map((s) => ({ ...s })),
+    questions: SAMPLE_PASSAGE.questions.map((q) => ({ ...q, choices: [...q.choices] })),
+  };
+}
+
 function shuffle(array) {
   const copy = [...array];
   for (let i = copy.length - 1; i > 0; i--) {

@@ -6,11 +6,15 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import {
   MODEL,
+  PASSAGE_SCHEMA,
   QUESTIONS_SCHEMA,
   SYSTEM_PROMPT,
   VALID_SUBJECTS,
   VALID_TESTS,
+  buildPassagePrompt,
   buildPrompt,
+  isPassageMode,
+  validatePassageSet,
   validateQuestions,
 } from "../src/lib/questionSpec.js";
 import { isEntitled } from "../src/lib/entitlement.js";
@@ -101,14 +105,17 @@ export default async function handler(req, res) {
     }
   }
 
-  const { test, subject } = req.body ?? {};
+  const { test, subject, mode } = req.body ?? {};
   if (!VALID_TESTS.includes(test) || !VALID_SUBJECTS.includes(subject)) {
     return res.status(400).json({ error: "Invalid test or subject." });
   }
+  // Honor an explicit passage request, but also fall back to the format the
+  // subject is configured for so an older client can't ask for MCQs on a
+  // passage-only section.
+  const passage = mode === "passage" || isPassageMode(test, subject);
 
-  // 4000 tokens is ~2x what five questions need; a tight cap means a rare
-  // runaway generation fails fast instead of burning minutes. The 90s timeout
-  // bounds each attempt well inside Vercel's function limit.
+  // The 90s timeout bounds each attempt well inside Vercel's function limit;
+  // 8000 tokens covers either a 5-MCQ set or a full passage + grouped Qs.
   const client = new Anthropic({ maxRetries: 1, timeout: 90_000 }); // reads ANTHROPIC_API_KEY from env
 
   try {
@@ -116,9 +123,17 @@ export default async function handler(req, res) {
       model: MODEL,
       max_tokens: 8000,
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildPrompt(test, subject) }],
+      messages: [
+        {
+          role: "user",
+          content: passage ? buildPassagePrompt(test, subject) : buildPrompt(test, subject),
+        },
+      ],
       output_config: {
-        format: { type: "json_schema", schema: QUESTIONS_SCHEMA },
+        format: {
+          type: "json_schema",
+          schema: passage ? PASSAGE_SCHEMA : QUESTIONS_SCHEMA,
+        },
       },
     });
 
@@ -130,6 +145,9 @@ export default async function handler(req, res) {
     }
 
     const text = response.content.find((block) => block.type === "text")?.text ?? "";
+    if (passage) {
+      return res.status(200).json({ passage: validatePassageSet(text) });
+    }
     return res.status(200).json({ questions: validateQuestions(text) });
   } catch (err) {
     if (err instanceof Anthropic.RateLimitError) {

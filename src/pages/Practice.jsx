@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import TimerRing from "../components/TimerRing.jsx";
-import { generateQuestions } from "../lib/claude.js";
-import { getSampleQuestions } from "../lib/demoQuestions.js";
+import PassageRunner from "../components/PassageRunner.jsx";
+import { generatePassage, generateQuestions } from "../lib/claude.js";
+import { getSamplePassage, getSampleQuestions } from "../lib/demoQuestions.js";
 import {
   getApiKey,
   hasStoredKey,
@@ -21,7 +22,7 @@ import {
   XIcon,
 } from "../components/icons.jsx";
 
-import { VALID_SUBJECTS, VALID_TESTS } from "../lib/questionSpec.js";
+import { VALID_SUBJECTS, VALID_TESTS, isPassageMode } from "../lib/questionSpec.js";
 import { authEnabled } from "../lib/supabase.js";
 import { useAuth } from "../lib/useAuth.js";
 import CalculatorWidget from "../components/CalculatorWidget.jsx";
@@ -66,11 +67,14 @@ export default function Practice() {
   const test = params.get("test");
   const subject = params.get("subject");
   const valid = VALID_TESTS.includes(test) && VALID_SUBJECTS.includes(subject);
+  const passageMode = valid && isPassageMode(test, subject);
 
   // "intro" | "loading" | "active" | "done" | "error"
   const [phase, setPhase] = useState("intro");
   const [source, setSource] = useState(null); // "ai" | "sample"
   const [questions, setQuestions] = useState([]);
+  const [passageSet, setPassageSet] = useState(null); // passage-mode payload
+  const [result, setResult] = useState(null); // { score, total } at completion
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -103,17 +107,16 @@ export default function Practice() {
 
   const score = answers.filter((a) => a.correct).length;
 
+  // Unified tally for the results screen. Passage mode reports its own
+  // score/total via onComplete; the MCQ flow derives it from `answers`.
+  const resultScore = passageMode ? (result?.score ?? 0) : score;
+  const resultTotal = passageMode ? (result?.total ?? 0) : questions.length;
+
   // Persist the result exactly once when the session completes.
   useEffect(() => {
-    if (phase !== "done" || savedRef.current || questions.length === 0) return;
+    if (phase !== "done" || savedRef.current || resultTotal === 0) return;
     savedRef.current = true;
-    saveResult({
-      test,
-      subject,
-      score: answers.filter((a) => a.correct).length,
-      total: questions.length,
-      source,
-    });
+    saveResult({ test, subject, score: resultScore, total: resultTotal, source });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
@@ -126,6 +129,15 @@ export default function Practice() {
     setCurrent(0);
     setSelected(null);
     setRevealed(false);
+    setResult(null);
+    savedRef.current = false;
+    setPhase("active");
+  }
+
+  function beginPassageSession(set, src) {
+    setPassageSet(set);
+    setSource(src);
+    setResult(null);
     savedRef.current = false;
     setPhase("active");
   }
@@ -136,13 +148,23 @@ export default function Practice() {
     const controller = new AbortController();
     abortRef.current = controller;
     try {
-      const qs = await generateQuestions({
-        test,
-        subject,
-        apiKey: getApiKey(),
-        signal: controller.signal,
-      });
-      beginSession(qs, "ai");
+      if (passageMode) {
+        const set = await generatePassage({
+          test,
+          subject,
+          apiKey: getApiKey(),
+          signal: controller.signal,
+        });
+        beginPassageSession(set, "ai");
+      } else {
+        const qs = await generateQuestions({
+          test,
+          subject,
+          apiKey: getApiKey(),
+          signal: controller.signal,
+        });
+        beginSession(qs, "ai");
+      }
     } catch (e) {
       if (controller.signal.aborted) return;
       setError(e.message || "Something went wrong.");
@@ -156,7 +178,16 @@ export default function Practice() {
   }
 
   function startSample() {
-    beginSession(getSampleQuestions(subject), "sample");
+    if (passageMode) {
+      beginPassageSession(getSamplePassage(), "sample");
+    } else {
+      beginSession(getSampleQuestions(subject), "sample");
+    }
+  }
+
+  function finishPassage({ score: s, total }) {
+    setResult({ score: s, total });
+    setPhase("done");
   }
 
   function saveKey() {
@@ -219,18 +250,37 @@ export default function Practice() {
               Ready to drill?
             </h1>
             <ul className="mt-4 space-y-2 text-sm text-slate-400">
-              <li className="flex items-center gap-2.5">
-                <Bolt className="h-4 w-4 text-electric-400" /> 5 multiple-choice
-                questions written for this session
-              </li>
-              <li className="flex items-center gap-2.5">
-                <AlertTriangle className="h-4 w-4 text-amber-400" /> 60 seconds
-                per question — the clock starts immediately
-              </li>
-              <li className="flex items-center gap-2.5">
-                <Sparkles className="h-4 w-4 text-cyan-300" /> A detailed
-                explanation after every answer
-              </li>
+              {passageMode ? (
+                <>
+                  <li className="flex items-center gap-2.5">
+                    <Bolt className="h-4 w-4 text-electric-400" /> A full passage
+                    with underlined portions to fix — just like the real ACT
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Sparkles className="h-4 w-4 text-cyan-300" /> Answer each
+                    underlined spot as you go; the passage stays pinned
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400" /> A detailed
+                    explanation after every answer
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li className="flex items-center gap-2.5">
+                    <Bolt className="h-4 w-4 text-electric-400" /> 5
+                    multiple-choice questions written for this session
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <AlertTriangle className="h-4 w-4 text-amber-400" /> 60
+                    seconds per question — the clock starts immediately
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Sparkles className="h-4 w-4 text-cyan-300" /> A detailed
+                    explanation after every answer
+                  </li>
+                </>
+              )}
             </ul>
 
             <div className="mt-7 border-t border-white/10 pt-6">
@@ -319,7 +369,7 @@ export default function Practice() {
                 className={`btn-primary flex-1 ${!aiAvailable ? "cursor-not-allowed opacity-40" : ""}`}
               >
                 <Bolt className="h-4 w-4" />
-                Generate 5 AI questions
+                {passageMode ? "Generate AI passage" : "Generate 5 AI questions"}
               </button>
               <button type="button" onClick={startSample} className="btn-ghost flex-1">
                 Use sample set
@@ -368,8 +418,20 @@ export default function Practice() {
         </div>
       )}
 
-      {/* ---------------- Active question ---------------- */}
-      {phase === "active" && question && (
+      {/* ---------------- Active: passage mode ---------------- */}
+      {phase === "active" && passageMode && passageSet && (
+        <PassageRunner
+          passage={passageSet}
+          test={test}
+          subject={subject}
+          source={source}
+          onExit={endSession}
+          onComplete={finishPassage}
+        />
+      )}
+
+      {/* ---------------- Active question (MCQ mode) ---------------- */}
+      {phase === "active" && !passageMode && question && (
         <div className="mx-auto max-w-2xl">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -503,7 +565,7 @@ export default function Practice() {
                   strokeWidth="9"
                   strokeLinecap="round"
                   strokeDasharray={2 * Math.PI * 52}
-                  strokeDashoffset={2 * Math.PI * 52 * (1 - score / questions.length)}
+                  strokeDashoffset={2 * Math.PI * 52 * (1 - resultScore / resultTotal)}
                   style={{ transition: "stroke-dashoffset 1s ease" }}
                 />
                 <defs>
@@ -516,21 +578,21 @@ export default function Practice() {
               <div className="absolute inset-0 grid place-items-center">
                 <div>
                   <p className="font-display text-4xl font-extrabold text-white">
-                    {Math.round((score / questions.length) * 100)}%
+                    {Math.round((resultScore / resultTotal) * 100)}%
                   </p>
                   <p className="text-xs text-slate-400">
-                    {score}/{questions.length} correct
+                    {resultScore}/{resultTotal} correct
                   </p>
                 </div>
               </div>
             </div>
 
             <h2 className="mt-6 font-display text-2xl font-extrabold text-white">
-              {score === questions.length
+              {resultScore === resultTotal
                 ? "Perfect run."
-                : score >= 4
+                : resultScore / resultTotal >= 0.8
                   ? "Elevated indeed."
-                  : score >= 3
+                  : resultScore / resultTotal >= 0.6
                     ? "Solid — keep climbing."
                     : "Every rep counts. Run it back."}
             </h2>
