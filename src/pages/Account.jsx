@@ -385,12 +385,12 @@ export default function Account() {
                     <div className="flex items-baseline justify-between">
                       <span className="font-display font-bold text-white">Lifetime</span>
                       <span>
-                        <span className="font-display text-2xl font-extrabold text-white">$180</span>
+                        <span className="font-display text-2xl font-extrabold text-white">$200</span>
                         <span className="text-sm text-slate-400"> once</span>
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-electric-200/90">
-                      Pay once, yours forever — less than 7 months of monthly, then never pay again.
+                      Pay once, own it forever — save $61 vs 9 months of monthly.
                     </p>
                     <button
                       type="button"

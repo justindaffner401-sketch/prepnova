@@ -278,11 +278,12 @@ export default function Landing() {
               </span>
               <p className="font-display font-bold text-white">Lifetime</p>
               <p className="mt-3">
-                <span className="font-display text-5xl font-extrabold text-white">$180</span>
+                <span className="font-display text-5xl font-extrabold text-white">$200</span>
                 <span className="ml-1 text-sm text-slate-300">once</span>
               </p>
               <p className="mt-2 text-xs text-electric-200/90">
-                Pay once, yours forever — never pay again.
+                <span className="text-slate-500 line-through">$261 value</span> — save $61, then
+                never pay again.
               </p>
               <ul className="mt-5 flex-1 space-y-2.5">
                 {PREPNOVA_PERKS.map((perk) => (
