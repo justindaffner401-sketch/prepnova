@@ -6,6 +6,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import {
   MODEL,
+  PASSAGE_MODEL,
   PASSAGE_SCHEMA,
   QUESTIONS_SCHEMA,
   SAT_WRITING_SCHEMA,
@@ -151,6 +152,8 @@ export default async function handler(req, res) {
       : passage
         ? PASSAGE_SCHEMA
         : QUESTIONS_SCHEMA;
+  // Passage-heavy sections use the stronger model; MCQ stays on Haiku.
+  const model = writing || reading || passage ? PASSAGE_MODEL : MODEL;
 
   // The 90s timeout bounds each attempt well inside Vercel's function limit;
   // 8000 tokens covers an over-generated MCQ set or a full passage.
@@ -158,7 +161,7 @@ export default async function handler(req, res) {
 
   try {
     const response = await client.messages.create({
-      model: MODEL,
+      model,
       max_tokens: 8000,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content }],

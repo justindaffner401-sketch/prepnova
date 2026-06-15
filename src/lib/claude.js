@@ -9,6 +9,7 @@ import {
   buildPrompt,
   buildWritingPrompt,
   chooseReadingVariant,
+  modelForMode,
   readingPromptFor,
   readingSchemaFor,
   validatePassageSet,
@@ -179,7 +180,7 @@ async function generateDirect({ test, subject, apiKey, signal, mode }) {
   try {
     response = await client.messages.create(
       {
-        model: MODEL,
+        model: modelForMode(mode),
         max_tokens: 8000,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content }],

@@ -11,7 +11,7 @@ machine (Mac or Windows) can pick up the project — read it first.
 - **Auth + DB:** Supabase (project ref `roufybwqayzhldgfdbgo`). `subscriptions` table; email confirm ON; SMTP via Resend.
 - **Payments:** Stripe (LIVE). Monthly $29 (7-day trial), 1-Year $250/yr recurring, Lifetime $600 one-time.
 - **Email:** Resend (domain prepnovaai.com verified) → Supabase custom SMTP.
-- **AI questions:** Anthropic `claude-haiku-4-5-20251001` via `/api/generate-questions` (key server-side). A 2nd-model **verification pass** (OpenAI, `api/_verify.js`) re-solves each generated question and drops disagreements — active only when `OPENAI_API_KEY` is set in Vercel; no-ops otherwise.
+- **AI questions:** via `/api/generate-questions` (key server-side). Model split (`modelForMode`): **Haiku** (`claude-haiku-4-5-20251001`) for MCQ (Math/Science); **Sonnet** (`claude-sonnet-4-6`) for the passage-heavy sections (ACT English/Reading, SAT R&W) for better prose/coherence. A 2nd-model **verification pass** (OpenAI, `api/_verify.js`) re-solves each generated question and drops disagreements — active only when `OPENAI_API_KEY` is set in Vercel; no-ops otherwise.
 - **Stack:** Vite 7 + React 19 + Tailwind v4 (`@theme` tokens in `src/index.css`) + React Router 7.
 
 ## Run / deploy

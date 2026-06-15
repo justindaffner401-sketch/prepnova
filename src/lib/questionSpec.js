@@ -2,7 +2,16 @@
 // proxy (api/generate-questions.js) — keep this file free of browser- or
 // Node-only APIs.
 
+// Haiku handles the fast MCQ path (Math/Science). The passage-heavy sections
+// (ACT English/Reading, SAT Reading & Writing) use a stronger model for better
+// prose and question coherence — the verification pass guards correctness.
 export const MODEL = "claude-haiku-4-5-20251001";
+export const PASSAGE_MODEL = "claude-sonnet-4-6";
+
+// Pick the generation model for a given mode ("mcq" | "passage" | "reading" | "writing").
+export function modelForMode(mode) {
+  return mode && mode !== "mcq" ? PASSAGE_MODEL : MODEL;
+}
 
 export const VALID_TESTS = ["ACT", "SAT"];
 export const VALID_SUBJECTS = ["Math", "English", "Reading", "Science"];
@@ -194,8 +203,13 @@ HOW THE REAL SECTION WORKS: a passage is printed with certain portions UNDERLINE
 
 Output a JSON object with "title", "segments", and "questions".
 
+MAKE THE PASSAGE WORTH READING:
+- Pick a SPECIFIC, concrete subject with a real story or idea — a particular person, place, discovery, craft, performance, event, or object. AVOID generic, overused topics (volunteering, a sports season, "my grandmother taught me," a vague life lesson, a trip that changed me).
+- Vary the type from passage to passage: a profile of a little-known innovator or artist; the surprising history of an everyday object; a first-person account of an unusual job, hobby, or skill; a piece on a striking natural phenomenon; a slice of cultural or scientific history. Aim for something a curious 11th grader would genuinely find interesting.
+- Use concrete details, real information, and a clear voice; the prose should have some life, not read like filler.
+
 PASSAGE ("title" + "segments"):
-- Write a coherent 380-460 word passage — a first-person narrative, a biography/history piece, or a popular-science/culture piece (the usual ACT subjects).
+- Write a coherent 380-460 word passage in the type you chose above.
 - Break the FULL passage into ordered "segments" that, read in order, reproduce the passage exactly with no gaps or overlaps.
 - Plain-text segment: { "text": "...", "underline": false, "ref": 0 }.
 - Underlined segment: { "text": "<the underlined words>", "underline": true, "ref": N } where N is its number.
@@ -220,6 +234,7 @@ RULES FOR EVERY QUESTION:
 - "choices": exactly 4 objects { "text": "...", "correct": true|false }. ACTUALLY SOLVE each one and mark exactly ONE "correct": true.
 - For TYPE A/B/C the first choice text is "NO CHANGE". For TYPE D use the Yes/No wording.
 - COHERENCE CHECK: read the full sentence with the correct choice substituted in — it must be smooth and correct. The three wrong choices must each be CLEARLY worse (a real grammar error, an added redundancy, or a poorer fit for the goal), never a second defensible answer.
+- TEMPTING DISTRACTORS: make the wrong choices reflect common student mistakes — a comma that looks reasonable but splices, a near-synonym with the wrong connotation, a tense that almost fits, a transition that sounds plausible but signals the wrong relationship. They should be wrong on inspection, not obviously throwaway.
 - Spread the correct answer across positions — "NO CHANGE"/"Yes" must NOT always be correct.
 - "explanation": 2-4 sentences defending the correct choice and naming why the most tempting wrong choice fails. Refer to choices by their content, never by letter/position.
 - Plain text only: no markdown, no LaTeX.`;
