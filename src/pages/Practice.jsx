@@ -24,6 +24,7 @@ import {
 import { VALID_SUBJECTS, VALID_TESTS } from "../lib/questionSpec.js";
 import { authEnabled } from "../lib/supabase.js";
 import { useAuth } from "../lib/useAuth.js";
+import CalculatorWidget from "../components/CalculatorWidget.jsx";
 
 const SECONDS_PER_QUESTION = 60;
 const LETTERS = ["A", "B", "C", "D"];
@@ -206,6 +207,7 @@ export default function Practice() {
 
   return (
     <main className="container-pn pt-28 pb-20 sm:pt-36">
+      {subject === "Math" && phase === "active" && <CalculatorWidget />}
       {/* ---------------- Intro ---------------- */}
       {phase === "intro" && (
         <div className="anim-fade-up mx-auto max-w-xl">
