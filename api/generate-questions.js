@@ -8,22 +8,32 @@ import {
   MODEL,
   PASSAGE_SCHEMA,
   QUESTIONS_SCHEMA,
+  SAT_WRITING_SCHEMA,
   SYSTEM_PROMPT,
   VALID_SUBJECTS,
   VALID_TESTS,
   buildPassagePrompt,
   buildPrompt,
+  buildWritingPrompt,
   chooseReadingVariant,
   isPassageMode,
   isReadingMode,
+  isWritingMode,
   readingPromptFor,
   readingSchemaFor,
   validatePassageSet,
   validateQuestions,
   validateReadingFor,
+  validateWritingSet,
 } from "../src/lib/questionSpec.js";
 import { isEntitled } from "../src/lib/entitlement.js";
-import { verifierEnabled, verifyMcq, verifyPassage, verifyReading } from "./_verify.js";
+import {
+  verifierEnabled,
+  verifyMcq,
+  verifyPassage,
+  verifyReading,
+  verifyWriting,
+} from "./_verify.js";
 
 /* ---------------- Rate limiting ----------------
  * In-memory, per warm function instance. Counters aren't shared across
@@ -118,24 +128,29 @@ export default async function handler(req, res) {
   // Honor an explicit passage request, but also fall back to the format the
   // subject is configured for so an older client can't ask for MCQs on a
   // passage-only section.
-  const reading = mode === "reading" || isReadingMode(test, subject);
-  const passage = !reading && (mode === "passage" || isPassageMode(test, subject));
+  const writing = mode === "writing" || isWritingMode(test, subject);
+  const reading = !writing && (mode === "reading" || isReadingMode(test, subject));
+  const passage = !writing && !reading && (mode === "passage" || isPassageMode(test, subject));
   // When the verifier is on, over-generate standalone MCQs so dropping the
   // occasional disputed question still leaves a full set of 5.
   const mcqCount = verifierEnabled() ? 8 : 5;
 
   // Reading randomly picks a passage variant (single / paired / graph).
   const readingVariant = reading ? chooseReadingVariant() : null;
-  const content = reading
-    ? readingPromptFor(readingVariant, test, subject)
-    : passage
-      ? buildPassagePrompt(test, subject)
-      : buildPrompt(test, subject, mcqCount);
-  const schema = reading
-    ? readingSchemaFor(readingVariant)
-    : passage
-      ? PASSAGE_SCHEMA
-      : QUESTIONS_SCHEMA;
+  const content = writing
+    ? buildWritingPrompt(test, subject)
+    : reading
+      ? readingPromptFor(readingVariant, test, subject)
+      : passage
+        ? buildPassagePrompt(test, subject)
+        : buildPrompt(test, subject, mcqCount);
+  const schema = writing
+    ? SAT_WRITING_SCHEMA
+    : reading
+      ? readingSchemaFor(readingVariant)
+      : passage
+        ? PASSAGE_SCHEMA
+        : QUESTIONS_SCHEMA;
 
   // The 90s timeout bounds each attempt well inside Vercel's function limit;
   // 8000 tokens covers an over-generated MCQ set or a full passage.
@@ -158,6 +173,10 @@ export default async function handler(req, res) {
     }
 
     const text = response.content.find((block) => block.type === "text")?.text ?? "";
+    if (writing) {
+      const { verified, writing: set } = await verifyWriting(validateWritingSet(text));
+      return res.status(200).json({ writing: set, verified });
+    }
     if (reading) {
       const { verified, reading: set } = await verifyReading(
         validateReadingFor(readingVariant, text),

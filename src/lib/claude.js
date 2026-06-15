@@ -3,15 +3,18 @@ import {
   MODEL,
   PASSAGE_SCHEMA,
   QUESTIONS_SCHEMA,
+  SAT_WRITING_SCHEMA,
   SYSTEM_PROMPT,
   buildPassagePrompt,
   buildPrompt,
+  buildWritingPrompt,
   chooseReadingVariant,
   readingPromptFor,
   readingSchemaFor,
   validatePassageSet,
   validateQuestions,
   validateReadingFor,
+  validateWritingSet,
 } from "./questionSpec.js";
 import { supabase } from "./supabase.js";
 
@@ -57,6 +60,17 @@ export async function generateReading({ test, subject, apiKey, signal }) {
     ? await generateDirect({ test, subject, apiKey, signal, mode: "reading" })
     : await generateViaProxy({ test, subject, signal, mode: "reading" });
   return { reading: data, verified };
+}
+
+/**
+ * Generate a set of SAT Reading & Writing items.
+ * Returns { writing: { questions: [...] }, verified }.
+ */
+export async function generateWriting({ test, subject, apiKey, signal }) {
+  const { data, verified } = apiKey
+    ? await generateDirect({ test, subject, apiKey, signal, mode: "writing" })
+    : await generateViaProxy({ test, subject, signal, mode: "writing" });
+  return { writing: data, verified };
 }
 
 /* ---------------- Server proxy path ---------------- */
@@ -115,6 +129,13 @@ async function generateViaProxy({ test, subject, signal, mode }) {
     return { data: data.reading, verified: Boolean(data.verified) };
   }
 
+  if (mode === "writing") {
+    if (!data?.writing) {
+      throw new Error("The server didn't return a complete set of questions. Try again.");
+    }
+    return { data: data.writing, verified: Boolean(data.verified) };
+  }
+
   const questions = Array.isArray(data?.questions) ? data.questions : [];
   if (questions.length < 5) {
     throw new Error("The server didn't return a complete set of questions. Try again.");
@@ -142,13 +163,17 @@ async function generateDirect({ test, subject, apiKey, signal, mode }) {
       ? buildPassagePrompt(test, subject)
       : mode === "reading"
         ? readingPromptFor(variant, test, subject)
-        : buildPrompt(test, subject);
+        : mode === "writing"
+          ? buildWritingPrompt(test, subject)
+          : buildPrompt(test, subject);
   const schema =
     mode === "passage"
       ? PASSAGE_SCHEMA
       : mode === "reading"
         ? readingSchemaFor(variant)
-        : QUESTIONS_SCHEMA;
+        : mode === "writing"
+          ? SAT_WRITING_SCHEMA
+          : QUESTIONS_SCHEMA;
 
   let response;
   try {
@@ -183,7 +208,9 @@ async function generateDirect({ test, subject, apiKey, signal, mode }) {
       ? validatePassageSet(text)
       : mode === "reading"
         ? validateReadingFor(variant, text)
-        : validateQuestions(text).slice(0, 5);
+        : mode === "writing"
+          ? validateWritingSet(text)
+          : validateQuestions(text).slice(0, 5);
   return { data, verified: false };
 }
 

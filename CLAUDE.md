@@ -57,7 +57,7 @@ pinned-passage two-column layout, AI generation (Pro-gated, via the same `/api/g
 Spec from the owner (remaining slices):
 - **ACT English:** ✅ done as above. Future polish: passage-level questions not tied to an underline (a boxed number marking a position), and multi-passage sessions (~5–6 passages × 5–10 Qs).
 - **ACT Reading:** ✅ done, all three passage types. `mode:"reading"` randomly picks a variant (`chooseReadingVariant`): **single** (numbered paragraphs), **paired** A/B (two passages + scope-tagged questions), or **graph** (passage + a bar/line figure via `ChartFigure.jsx`). Authentic stems, A-D/F-J letters, pinned passage, `verifyReading`. Each variant has its own schema/prompt/validator in questionSpec.js (`READING_*`), plus offline samples in `getSampleReading` (random of the three). **Deferred:** multi-passage full sessions (one passage per session for now).
-- **SAT English** = Reading & Writing (combined reading + grammar).
+- **SAT English (Reading & Writing):** ✅ done. `mode:"writing"` (`isWritingMode` = SAT+English). A set of independent short-text items (one ~25-150 word text + one question each), one per screen, A-D choices, spanning the SAT domains (words in context, transitions, boundaries, form/sense, central ideas, command of evidence, inferences, rhetorical synthesis). `WritingRunner.jsx`, `SAT_WRITING_SCHEMA`/`buildWritingPrompt`/`validateWritingSet`, `getSampleWriting`, `verifyWriting`. **Deferred:** quantitative (table/graph) command-of-evidence items.
 - Big passage + 5–10 related questions grouped; passage stays pinned while answering.
 - Needs: new generation schema (passage + grouped Qs + underline spans + paired A/B + graphs) and a new Practice UI.
 

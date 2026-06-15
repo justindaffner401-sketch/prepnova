@@ -761,3 +761,98 @@ export function getSampleQuestions(subject) {
     };
   });
 }
+
+// Built-in SAT Reading & Writing item set so the format works without an API
+// key. Each item is self-contained; answers verified; correct choices spread A-D.
+const SAMPLE_WRITING = {
+  questions: [
+    {
+      category: "Words in Context",
+      text: "The novelist was famously ______ about her writing process, rarely granting interviews and never discussing a book until it was finished.",
+      prompt: "Which choice completes the text with the most logical and precise word or phrase?",
+      choices: ["verbose", "frequent", "reticent", "careless"],
+      answerIndex: 2,
+      explanation:
+        '"Reticent" means reserved or reluctant to share, which fits a writer who rarely gives interviews and won\'t discuss a book until it\'s done. "Verbose" (wordy) is the opposite, and "frequent" and "careless" don\'t describe a person\'s willingness to talk.',
+    },
+    {
+      category: "Transitions",
+      text: "The new bridge cut the average commute between the two towns nearly in half. ______ local businesses on both sides reported a sharp rise in customers within months of its opening.",
+      prompt: "Which choice completes the text with the most logical transition?",
+      choices: ["Nevertheless,", "As a result,", "In contrast,", "For instance,"],
+      answerIndex: 1,
+      explanation:
+        'The rise in customers is a consequence of the shorter commute, so the cause-and-effect transition "As a result," fits. "Nevertheless" and "In contrast" signal opposition, and "For instance" signals an example, neither of which matches the relationship.',
+    },
+    {
+      category: "Boundaries",
+      text: "The Mid-Atlantic Ridge had gone unnoticed for centuries ______ Marie Tharp's careful maps finally brought it to light in the 1950s.",
+      prompt: "Which choice completes the text so that it conforms to the conventions of Standard English?",
+      choices: [", ", " but", "; but", ", but"],
+      answerIndex: 3,
+      explanation:
+        'Two independent clauses joined by a coordinating conjunction take a comma before the conjunction: "centuries, but Marie Tharp\'s...". A comma alone is a splice, "but" without a comma omits the needed punctuation, and a semicolon before "but" over-punctuates the boundary.',
+    },
+    {
+      category: "Central Ideas & Details",
+      text: "Honeybees communicate the location of food through a \"waggle dance.\" The angle of the dance relative to vertical signals the direction of the food relative to the sun, while the duration of the waggle indicates how far away it is. Other bees follow these cues to find the source, sometimes hundreds of meters away.",
+      prompt: "Which choice best states the main idea of the text?",
+      choices: [
+        "A honeybee's waggle dance encodes both the direction and the distance of a food source.",
+        "Honeybees can travel hundreds of meters from the hive to reach food.",
+        "The waggle dance is always performed relative to the position of the sun.",
+        "Honeybees depend on vision rather than smell to locate food.",
+      ],
+      answerIndex: 0,
+      explanation:
+        "The text's central point is that the dance's angle encodes direction and its duration encodes distance. The travel range and the reference to the sun are supporting details, and the claim about vision versus smell is never made.",
+    },
+    {
+      category: "Command of Evidence",
+      text: "A team of ecologists hypothesized that planting wildflowers along the edges of farm fields raises crop yields by drawing in pollinators. To test the idea, they compared the yields of fields bordered by wildflowers with the yields of fields that had no such borders.",
+      prompt: "Which finding, if true, would most directly support the ecologists' hypothesis?",
+      choices: [
+        "Wildflowers planted along field edges attracted a wide variety of insects.",
+        "Farmers found the wildflower borders inexpensive to plant and maintain.",
+        "Fields bordered by wildflowers produced significantly higher yields than fields without them.",
+        "Fields without wildflower borders tended to require more frequent irrigation.",
+      ],
+      answerIndex: 2,
+      explanation:
+        "The hypothesis links wildflower borders to higher yields, so finding higher yields in the bordered fields directly supports it. Insect variety, planting cost, and irrigation needs don't speak to the yield claim itself.",
+    },
+    {
+      category: "Inferences",
+      text: "Most desert plants survive on scarce water by limiting how much they lose to the dry air. The creosote bush is unusual: it coats its leaves in a resin that seals in moisture even in extreme heat, so it can keep its leaves all year. Many of its neighbors, lacking such protection, must instead ______",
+      prompt: "Which choice most logically completes the text?",
+      choices: [
+        "grow far taller in order to capture more sunlight.",
+        "shed their leaves during the driest months to conserve water.",
+        "produce unusually bright flowers to attract pollinators.",
+        "store decades' worth of water deep within their roots.",
+      ],
+      answerIndex: 1,
+      explanation:
+        "The contrast (the creosote keeps its leaves year-round, while neighbors \"lacking such protection\" must do otherwise) implies the neighbors lose their leaves to save water. Growing taller, flowering, and long-term root storage aren't tied to the leaf-and-water contrast the text sets up.",
+    },
+    {
+      category: "Rhetorical Synthesis",
+      text: "While researching a topic, a student has taken the following notes:\n- The Voyager 1 probe launched in 1977.\n- It was built to study Jupiter and Saturn.\n- In 2012, it became the first human-made object to reach interstellar space.\n- It still transmits data to Earth from over 15 billion miles away.",
+      prompt:
+        "The student wants to emphasize the remarkable longevity of Voyager 1. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+      choices: [
+        "Voyager 1 was originally built to study Jupiter and Saturn.",
+        "In 2012, Voyager 1 reached interstellar space for the first time.",
+        "Voyager 1 is a human-made object that launched back in 1977.",
+        "Launched in 1977, Voyager 1 still transmits data to Earth from over 15 billion miles away today.",
+      ],
+      answerIndex: 3,
+      explanation:
+        "Emphasizing longevity means stressing how long the probe has kept working, so pairing its 1977 launch with the fact that it still transmits data does exactly that. The other choices each state a single fact without conveying the long span of operation.",
+    },
+  ],
+};
+
+export function getSampleWriting() {
+  return JSON.parse(JSON.stringify(SAMPLE_WRITING));
+}

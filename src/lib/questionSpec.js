@@ -19,6 +19,12 @@ export function isReadingMode(test, subject) {
   return test === "ACT" && subject === "Reading";
 }
 
+// SAT "English" is the digital Reading & Writing section: a series of
+// independent short-text items (one passage + one question each).
+export function isWritingMode(test, subject) {
+  return test === "SAT" && subject === "English";
+}
+
 export const SYSTEM_PROMPT =
   "You are PrepNova's question engine — an expert ACT and SAT tutor who writes realistic, test-accurate multiple-choice practice questions with explanations that genuinely teach the underlying concept.";
 
@@ -798,4 +804,117 @@ export function readingContextText(set) {
     return `${paras}\n\n${fig.caption} (${fig.type} chart; x=${fig.xLabel}, y=${fig.yLabel}). Data — ${data}`;
   }
   return paras;
+}
+
+/* ===================================================================
+ * SAT Reading & Writing — independent short-text items.
+ *
+ * The digital SAT R&W section presents one short passage (~25-150 words) with
+ * ONE question, one item per screen. Items are self-contained and span several
+ * domains (words in context, transitions, boundaries/grammar, command of
+ * evidence, inferences, rhetorical synthesis). Choices are A-D (no F/G/H/J).
+ * =================================================================== */
+
+export const SAT_WRITING_CATEGORIES = [
+  "Words in Context",
+  "Text Structure & Purpose",
+  "Central Ideas & Details",
+  "Command of Evidence",
+  "Inferences",
+  "Boundaries",
+  "Form, Structure & Sense",
+  "Transitions",
+  "Rhetorical Synthesis",
+];
+
+export const SAT_WRITING_SCHEMA = {
+  type: "object",
+  properties: {
+    questions: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          category: { type: "string" },
+          text: { type: "string" },
+          prompt: { type: "string" },
+          choices: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: { text: { type: "string" }, correct: { type: "boolean" } },
+              required: ["text", "correct"],
+              additionalProperties: false,
+            },
+          },
+          explanation: { type: "string" },
+        },
+        required: ["category", "text", "prompt", "choices", "explanation"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["questions"],
+  additionalProperties: false,
+};
+
+export function buildWritingPrompt(test, subject) {
+  if (test !== "SAT" || subject !== "English") {
+    throw new Error(`Writing mode is not configured for ${test} ${subject}.`);
+  }
+  return `Write 8 practice items for the digital SAT Reading & Writing section, modeled exactly on the real test.
+
+HOW THE REAL SECTION WORKS: each item is SELF-CONTAINED — a short text (about 25-150 words) followed by ONE question with four choices (A-D). Items are independent of one another.
+
+Output a JSON object with "questions": an array of 8 items, each { "category", "text", "prompt", "choices", "explanation" }.
+
+Cover this realistic spread of categories (use the exact "category" label and the exact "prompt" stem shown):
+1. "Words in Context" — "text" is a short passage with a blank shown as "______". prompt: "Which choice completes the text with the most logical and precise word or phrase?" Choices are single words or short phrases.
+2. "Text Structure & Purpose" — a short text. prompt: "Which choice best states the main purpose of the text?" (or "...the overall structure of the text?").
+3. "Central Ideas & Details" — a short text. prompt: "Which choice best states the main idea of the text?".
+4. "Command of Evidence" — a short text describing a study, claim, or hypothesis. prompt: "Which finding, if true, would most directly support the [researchers'/author's] conclusion?" (or "...weaken..."). Choices are possible findings.
+5. "Inferences" — a short text that ENDS with a blank "______". prompt: "Which choice most logically completes the text?" Choices are clauses that finish the logic.
+6. "Boundaries" — a short text with a blank for punctuation. prompt: "Which choice completes the text so that it conforms to the conventions of Standard English?" Choices test commas, semicolons, colons, dashes, apostrophes.
+7. "Transitions" — a short text with a blank "______" between two sentences. prompt: "Which choice completes the text with the most logical transition?" Choices are transition words/phrases (e.g., "However,", "For example,", "As a result,").
+8. "Rhetorical Synthesis" — "text" is a set of bullet notes (one per line, each starting with "- "). prompt: "The student wants to [a specific goal]. Which choice most effectively uses relevant information from the notes to accomplish this goal?".
+
+For EVERY item:
+- "choices": exactly 4 objects { "text": "...", "correct": true|false }. ACTUALLY SOLVE it; mark exactly ONE correct and verify it. The three wrong choices must be clearly inferior (wrong meaning, wrong grammar, illogical, or off-goal), never a second defensible answer.
+- Spread the correct answer across positions A-D.
+- "explanation": 2-4 sentences explaining why the correct choice works and why the most tempting wrong choice fails. Refer to choices by content, never by letter/position.
+- Plain text only: no markdown, no LaTeX.`;
+}
+
+export function validateWritingSet(text) {
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error("Claude returned something unreadable. Try generating again.");
+  }
+  const cleaned = [];
+  for (const q of Array.isArray(parsed?.questions) ? parsed.questions : []) {
+    if (!q || typeof q.text !== "string" || !q.text.trim()) continue;
+    if (typeof q.prompt !== "string" || !q.prompt.trim()) continue;
+    if (typeof q.explanation !== "string" || !q.explanation.trim()) continue;
+    if (!Array.isArray(q.choices) || q.choices.length !== 4) continue;
+    const texts = q.choices.map((c) => c?.text);
+    if (!texts.every((t) => typeof t === "string" && t.trim())) continue;
+    const correctIndexes = q.choices
+      .map((c, i) => (c?.correct === true ? i : -1))
+      .filter((i) => i !== -1);
+    if (correctIndexes.length !== 1) continue;
+    cleaned.push({
+      category: SAT_WRITING_CATEGORIES.includes(q.category) ? q.category : "Reading & Writing",
+      text: q.text.trim(),
+      prompt: q.prompt.trim(),
+      choices: texts,
+      answerIndex: correctIndexes[0],
+      explanation: q.explanation,
+    });
+  }
+  if (cleaned.length < 5) {
+    throw new Error("Claude didn't return a complete set of questions. Try again.");
+  }
+  return { questions: cleaned.slice(0, 12) };
 }

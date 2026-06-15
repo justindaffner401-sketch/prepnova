@@ -190,3 +190,32 @@ ${JSON.stringify(items)}`;
   if (kept.length < 5) return { verified: false, reading };
   return { verified: true, reading: { ...reading, questions: kept } };
 }
+
+/* ---------------- SAT Reading & Writing (self-contained items) ---------------- */
+
+// Returns { verified, writing }. Each item carries its own short text, so the
+// verifier gets that text with the question. Disputed items are dropped.
+export async function verifyWriting(writing) {
+  if (!verifierEnabled() || writing.questions.length === 0) return { verified: false, writing };
+
+  const items = writing.questions.map((q, i) => ({
+    id: i,
+    text: q.text,
+    question: q.prompt,
+    choices: q.choices,
+  }));
+  const user = `Below are SAT Reading & Writing items. Each has its own short "text" (a passage, a sentence with a blank "______", or bullet notes) and a question. Solve each using only its own text, by standard SAT rules (precise word choice, grammar conventions, logic, evidence, or rhetorical goal).
+
+Return ONLY JSON shaped exactly like {"answers":[{"id":0,"choice":2}]} — one entry per id, where "choice" is the 0-based index of the single best answer.
+
+ITEMS:
+${JSON.stringify(items)}`;
+
+  const map = await callVerifier(user);
+  if (!map) return { verified: false, writing };
+
+  const kept = writing.questions.filter((q, i) => agrees(map, i, q));
+  if (kept.length === writing.questions.length) return { verified: true, writing };
+  if (kept.length < 5) return { verified: false, writing };
+  return { verified: true, writing: { ...writing, questions: kept } };
+}
