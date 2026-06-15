@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import TimerRing from "../components/TimerRing.jsx";
 import PassageRunner from "../components/PassageRunner.jsx";
-import { generatePassage, generateQuestions } from "../lib/claude.js";
-import { getSamplePassage, getSampleQuestions } from "../lib/demoQuestions.js";
+import ReadingRunner from "../components/ReadingRunner.jsx";
+import { generatePassage, generateQuestions, generateReading } from "../lib/claude.js";
+import { getSamplePassage, getSampleQuestions, getSampleReading } from "../lib/demoQuestions.js";
 import {
   getApiKey,
   hasStoredKey,
@@ -22,7 +23,7 @@ import {
   XIcon,
 } from "../components/icons.jsx";
 
-import { VALID_SUBJECTS, VALID_TESTS, isPassageMode } from "../lib/questionSpec.js";
+import { VALID_SUBJECTS, VALID_TESTS, isPassageMode, isReadingMode } from "../lib/questionSpec.js";
 import { authEnabled } from "../lib/supabase.js";
 import { useAuth } from "../lib/useAuth.js";
 import CalculatorWidget from "../components/CalculatorWidget.jsx";
@@ -68,12 +69,14 @@ export default function Practice() {
   const subject = params.get("subject");
   const valid = VALID_TESTS.includes(test) && VALID_SUBJECTS.includes(subject);
   const passageMode = valid && isPassageMode(test, subject);
+  const readingMode = valid && isReadingMode(test, subject);
 
   // "intro" | "loading" | "active" | "done" | "error"
   const [phase, setPhase] = useState("intro");
   const [source, setSource] = useState(null); // "ai" | "sample"
   const [questions, setQuestions] = useState([]);
-  const [passageSet, setPassageSet] = useState(null); // passage-mode payload
+  const [passageSet, setPassageSet] = useState(null); // ACT English passage payload
+  const [readingSet, setReadingSet] = useState(null); // ACT Reading passage payload
   const [result, setResult] = useState(null); // { score, total } at completion
   const [verified, setVerified] = useState(false); // 2nd-model verification ran
   const [current, setCurrent] = useState(0);
@@ -108,10 +111,11 @@ export default function Practice() {
 
   const score = answers.filter((a) => a.correct).length;
 
-  // Unified tally for the results screen. Passage mode reports its own
-  // score/total via onComplete; the MCQ flow derives it from `answers`.
-  const resultScore = passageMode ? (result?.score ?? 0) : score;
-  const resultTotal = passageMode ? (result?.total ?? 0) : questions.length;
+  // Unified tally for the results screen. Passage and Reading modes report
+  // their own score/total via onComplete; the MCQ flow derives it from `answers`.
+  const usesResult = passageMode || readingMode;
+  const resultScore = usesResult ? (result?.score ?? 0) : score;
+  const resultTotal = usesResult ? (result?.total ?? 0) : questions.length;
 
   // Persist the result exactly once when the session completes.
   useEffect(() => {
@@ -145,6 +149,15 @@ export default function Practice() {
     setPhase("active");
   }
 
+  function beginReadingSession(set, src, isVerified = false) {
+    setReadingSet(set);
+    setSource(src);
+    setVerified(isVerified);
+    setResult(null);
+    savedRef.current = false;
+    setPhase("active");
+  }
+
   async function startAI() {
     setPhase("loading");
     setError("");
@@ -159,6 +172,14 @@ export default function Practice() {
           signal: controller.signal,
         });
         beginPassageSession(passage, "ai", verified);
+      } else if (readingMode) {
+        const { reading, verified } = await generateReading({
+          test,
+          subject,
+          apiKey: getApiKey(),
+          signal: controller.signal,
+        });
+        beginReadingSession(reading, "ai", verified);
       } else {
         const { questions: qs, verified } = await generateQuestions({
           test,
@@ -183,6 +204,8 @@ export default function Practice() {
   function startSample() {
     if (passageMode) {
       beginPassageSession(getSamplePassage(), "sample");
+    } else if (readingMode) {
+      beginReadingSession(getSampleReading(), "sample");
     } else {
       beginSession(getSampleQuestions(subject), "sample");
     }
@@ -262,6 +285,21 @@ export default function Practice() {
                   <li className="flex items-center gap-2.5">
                     <Sparkles className="h-4 w-4 text-cyan-300" /> Answer each
                     underlined spot as you go; the passage stays pinned
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 text-emerald-400" /> A detailed
+                    explanation after every answer
+                  </li>
+                </>
+              ) : readingMode ? (
+                <>
+                  <li className="flex items-center gap-2.5">
+                    <Bolt className="h-4 w-4 text-electric-400" /> A full ACT
+                    Reading passage with the passage pinned beside the questions
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Sparkles className="h-4 w-4 text-cyan-300" /> Questions on
+                    main idea, inference, detail, vocabulary, and tone
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-emerald-400" /> A detailed
@@ -372,7 +410,7 @@ export default function Practice() {
                 className={`btn-primary flex-1 ${!aiAvailable ? "cursor-not-allowed opacity-40" : ""}`}
               >
                 <Bolt className="h-4 w-4" />
-                {passageMode ? "Generate AI passage" : "Generate 5 AI questions"}
+                {passageMode || readingMode ? "Generate AI passage" : "Generate 5 AI questions"}
               </button>
               <button type="button" onClick={startSample} className="btn-ghost flex-1">
                 Use sample set
@@ -434,8 +472,20 @@ export default function Practice() {
         />
       )}
 
+      {/* ---------------- Active: ACT Reading ---------------- */}
+      {phase === "active" && readingMode && readingSet && (
+        <ReadingRunner
+          reading={readingSet}
+          test={test}
+          source={source}
+          verified={verified}
+          onExit={endSession}
+          onComplete={finishPassage}
+        />
+      )}
+
       {/* ---------------- Active question (MCQ mode) ---------------- */}
-      {phase === "active" && !passageMode && question && (
+      {phase === "active" && !passageMode && !readingMode && question && (
         <div className="mx-auto max-w-2xl">
           <div className="flex items-center justify-between gap-4">
             <div>

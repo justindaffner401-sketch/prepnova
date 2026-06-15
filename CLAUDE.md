@@ -56,7 +56,7 @@ pinned-passage two-column layout, AI generation (Pro-gated, via the same `/api/g
 
 Spec from the owner (remaining slices):
 - **ACT English:** ✅ done as above. Future polish: passage-level questions not tied to an underline (a boxed number marking a position), and multi-passage sessions (~5–6 passages × 5–10 Qs).
-- **ACT Reading:** read the whole passage, answer about it ("what is the purpose of paragraph X"). 36 Qs, 4 passages; ONE has a graph; ONE is a paired passage split A/B.
+- **ACT Reading:** ✅ done (slice 1). Single numbered-paragraph passage + 9 comprehension questions (main idea / inference / detail / vocab-in-context / function / tone), authentic stems, A-D/F-J letters, pinned passage. `ReadingRunner.jsx`, `READING_SCHEMA`/`buildReadingPrompt`/`validateReadingSet`, `getSampleReading`, `mode:"reading"`, `verifyReading`. **Deferred:** the ONE paired A/B passage and the ONE graph passage; multi-passage sessions.
 - **SAT English** = Reading & Writing (combined reading + grammar).
 - Big passage + 5–10 related questions grouped; passage stays pinned while answering.
 - Needs: new generation schema (passage + grouped Qs + underline spans + paired A/B + graphs) and a new Practice UI.

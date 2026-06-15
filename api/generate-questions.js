@@ -8,17 +8,21 @@ import {
   MODEL,
   PASSAGE_SCHEMA,
   QUESTIONS_SCHEMA,
+  READING_SCHEMA,
   SYSTEM_PROMPT,
   VALID_SUBJECTS,
   VALID_TESTS,
   buildPassagePrompt,
   buildPrompt,
+  buildReadingPrompt,
   isPassageMode,
+  isReadingMode,
   validatePassageSet,
   validateQuestions,
+  validateReadingSet,
 } from "../src/lib/questionSpec.js";
 import { isEntitled } from "../src/lib/entitlement.js";
-import { verifierEnabled, verifyMcq, verifyPassage } from "./_verify.js";
+import { verifierEnabled, verifyMcq, verifyPassage, verifyReading } from "./_verify.js";
 
 /* ---------------- Rate limiting ----------------
  * In-memory, per warm function instance. Counters aren't shared across
@@ -113,13 +117,21 @@ export default async function handler(req, res) {
   // Honor an explicit passage request, but also fall back to the format the
   // subject is configured for so an older client can't ask for MCQs on a
   // passage-only section.
-  const passage = mode === "passage" || isPassageMode(test, subject);
+  const reading = mode === "reading" || isReadingMode(test, subject);
+  const passage = !reading && (mode === "passage" || isPassageMode(test, subject));
   // When the verifier is on, over-generate standalone MCQs so dropping the
   // occasional disputed question still leaves a full set of 5.
   const mcqCount = verifierEnabled() ? 8 : 5;
 
+  const content = reading
+    ? buildReadingPrompt(test, subject)
+    : passage
+      ? buildPassagePrompt(test, subject)
+      : buildPrompt(test, subject, mcqCount);
+  const schema = reading ? READING_SCHEMA : passage ? PASSAGE_SCHEMA : QUESTIONS_SCHEMA;
+
   // The 90s timeout bounds each attempt well inside Vercel's function limit;
-  // 8000 tokens covers either an over-generated MCQ set or a full passage.
+  // 8000 tokens covers an over-generated MCQ set or a full passage.
   const client = new Anthropic({ maxRetries: 1, timeout: 90_000 }); // reads ANTHROPIC_API_KEY from env
 
   try {
@@ -127,20 +139,8 @@ export default async function handler(req, res) {
       model: MODEL,
       max_tokens: 8000,
       system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: passage
-            ? buildPassagePrompt(test, subject)
-            : buildPrompt(test, subject, mcqCount),
-        },
-      ],
-      output_config: {
-        format: {
-          type: "json_schema",
-          schema: passage ? PASSAGE_SCHEMA : QUESTIONS_SCHEMA,
-        },
-      },
+      messages: [{ role: "user", content }],
+      output_config: { format: { type: "json_schema", schema } },
     });
 
     if (response.stop_reason === "refusal") {
@@ -151,6 +151,10 @@ export default async function handler(req, res) {
     }
 
     const text = response.content.find((block) => block.type === "text")?.text ?? "";
+    if (reading) {
+      const { verified, reading: set } = await verifyReading(validateReadingSet(text));
+      return res.status(200).json({ reading: set, verified });
+    }
     if (passage) {
       // verifyPassage drops disputed questions (and falls back to the
       // unverified set if that would gut the passage). `verified` is true only

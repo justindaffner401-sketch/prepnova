@@ -3,11 +3,14 @@ import {
   MODEL,
   PASSAGE_SCHEMA,
   QUESTIONS_SCHEMA,
+  READING_SCHEMA,
   SYSTEM_PROMPT,
   buildPassagePrompt,
   buildPrompt,
+  buildReadingPrompt,
   validatePassageSet,
   validateQuestions,
+  validateReadingSet,
 } from "./questionSpec.js";
 import { supabase } from "./supabase.js";
 
@@ -42,6 +45,17 @@ export async function generatePassage({ test, subject, apiKey, signal }) {
     ? await generateDirect({ test, subject, apiKey, signal, mode: "passage" })
     : await generateViaProxy({ test, subject, signal, mode: "passage" });
   return { passage: data, verified };
+}
+
+/**
+ * Generate one ACT Reading passage + comprehension questions.
+ * Returns { reading: { title, genre, paragraphs, questions }, verified }.
+ */
+export async function generateReading({ test, subject, apiKey, signal }) {
+  const { data, verified } = apiKey
+    ? await generateDirect({ test, subject, apiKey, signal, mode: "reading" })
+    : await generateViaProxy({ test, subject, signal, mode: "reading" });
+  return { reading: data, verified };
 }
 
 /* ---------------- Server proxy path ---------------- */
@@ -93,6 +107,13 @@ async function generateViaProxy({ test, subject, signal, mode }) {
     return { data: data.passage, verified: Boolean(data.verified) };
   }
 
+  if (mode === "reading") {
+    if (!data?.reading) {
+      throw new Error("The server didn't return a complete passage. Try again.");
+    }
+    return { data: data.reading, verified: Boolean(data.verified) };
+  }
+
   const questions = Array.isArray(data?.questions) ? data.questions : [];
   if (questions.length < 5) {
     throw new Error("The server didn't return a complete set of questions. Try again.");
@@ -112,7 +133,14 @@ async function generateDirect({ test, subject, apiKey, signal, mode }) {
     timeout: 90_000,
   });
 
-  const passage = mode === "passage";
+  const promptFor = {
+    passage: () => buildPassagePrompt(test, subject),
+    reading: () => buildReadingPrompt(test, subject),
+    mcq: () => buildPrompt(test, subject),
+  };
+  const schemaFor = { passage: PASSAGE_SCHEMA, reading: READING_SCHEMA, mcq: QUESTIONS_SCHEMA };
+  const key = promptFor[mode] ? mode : "mcq";
+
   let response;
   try {
     response = await client.messages.create(
@@ -120,19 +148,9 @@ async function generateDirect({ test, subject, apiKey, signal, mode }) {
         model: MODEL,
         max_tokens: 8000,
         system: SYSTEM_PROMPT,
-        messages: [
-          {
-            role: "user",
-            content: passage
-              ? buildPassagePrompt(test, subject)
-              : buildPrompt(test, subject),
-          },
-        ],
+        messages: [{ role: "user", content: promptFor[key]() }],
         output_config: {
-          format: {
-            type: "json_schema",
-            schema: passage ? PASSAGE_SCHEMA : QUESTIONS_SCHEMA,
-          },
+          format: { type: "json_schema", schema: schemaFor[key] },
         },
       },
       { signal },
@@ -151,10 +169,12 @@ async function generateDirect({ test, subject, apiKey, signal, mode }) {
 
   const text = response.content.find((block) => block.type === "text")?.text ?? "";
   // The local-key dev path doesn't run the server-side verification pass.
-  return {
-    data: passage ? validatePassageSet(text) : validateQuestions(text).slice(0, 5),
-    verified: false,
+  const validate = {
+    passage: () => validatePassageSet(text),
+    reading: () => validateReadingSet(text),
+    mcq: () => validateQuestions(text).slice(0, 5),
   };
+  return { data: validate[key](), verified: false };
 }
 
 function friendlyError(err) {

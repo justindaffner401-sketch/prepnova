@@ -373,6 +373,132 @@ export function getSamplePassage() {
   };
 }
 
+// Built-in ACT Reading passage (Natural Science) so the comprehension format
+// works without an API key. Answers verified against the passage; correct
+// choices are spread across positions.
+const SAMPLE_READING = {
+  title: "The Color-Changing Skin of the Octopus",
+  genre: "Natural Science",
+  paragraphs: [
+    "The octopus is among the most accomplished quick-change artists in the animal kingdom. In less than a second, it can shift the color of its skin from mottled brown to vivid red, or raise its texture into bumpy ridges that mimic coral. For decades this talent puzzled biologists, and for a strange reason: the octopus, by every test scientists have devised, appears to be colorblind. How can an animal match colors it cannot see?",
+    "The color changes themselves are produced by structures called chromatophores. Each chromatophore is a tiny elastic sac filled with pigment, ringed by small muscles. When those muscles contract, they stretch the sac open, spreading its pigment across a wider area and deepening the skin's color; when the muscles relax, the sac shrinks to a nearly invisible dot. A single octopus may carry several million chromatophores, and beneath them lie reflective cells that bounce back light, adding silvery and iridescent tones the pigments alone cannot produce.",
+    "The colorblindness puzzle has only recently begun to yield. Researchers have found light-sensitive proteins called opsins—the same family of molecules the eye uses to detect light—scattered throughout the octopus's skin. In other words, the skin itself may register light directly, independent of the eyes. An octopus might, in a sense, sample the brightness and perhaps the color of its surroundings through the very surface it is trying to disguise.",
+    "Camouflage, however, is not the skin's only job. Octopuses also use their shifting patterns to communicate. A male may flash bold stripes at a rival while showing a courting female a calmer pattern on the opposite side of his body at the very same instant—effectively sending two messages at once. Such displays suggest that the skin is not merely a passive disguise but an expressive surface, closer to a face than to a coat of paint.",
+    "These abilities have caught the attention of engineers as well as biologists. Teams are studying octopus skin in hopes of designing adaptive materials: fabrics that shift color to match their background, flexible electronic displays, and camouflage that responds to its environment without human control. Nature, in this case, has quietly solved a problem that human technology is only beginning to approach.",
+    "Much about the system remains mysterious. The octopus's nervous system is unusually distributed, with the majority of its neurons located not in its central brain but in its arms. A great deal of the processing behind a single color change may therefore happen locally, in the skin and limbs themselves, rather than being dictated from one command center. The animal that cannot see color, it seems, manages it with an intelligence spread across its entire body.",
+  ],
+  questions: [
+    {
+      prompt: "The main purpose of the passage is to:",
+      choices: [
+        "argue that octopuses are more intelligent than all other sea creatures",
+        "explain how octopuses change color and the questions that ability raises for scientists",
+        "describe a single laboratory's experiments on chromatophores",
+        "warn that octopus camouflage makes the animals impossible to study",
+      ],
+      answerIndex: 1,
+      explanation:
+        "The passage lays out the mechanism of color change (chromatophores, opsins) and the puzzles it raises (colorblindness, a distributed nervous system). It never ranks octopus intelligence against all other animals, centers on one lab's experiments, or warns that the animals can't be studied.",
+    },
+    {
+      prompt: "According to the passage, chromatophores deepen the skin's color when:",
+      choices: [
+        "the surrounding water grows darker",
+        "the octopus closes its eyes",
+        "their surrounding muscles contract and stretch the pigment sac open",
+        "reflective cells beneath them bounce back light",
+      ],
+      answerIndex: 2,
+      explanation:
+        "The second paragraph states that when the muscles contract they stretch the sac open, spreading pigment and deepening the color. The reflective cells add iridescent tones rather than deepening pigment, and neither darker water nor the eyes is named as the trigger.",
+    },
+    {
+      prompt: 'As it is used in the first paragraph, the word "match" most nearly means:',
+      choices: [
+        "compete against",
+        "set on fire",
+        "pair up romantically",
+        "reproduce or imitate",
+      ],
+      answerIndex: 3,
+      explanation:
+        'To "match colors it cannot see" means to reproduce or imitate those colors on its skin. The other senses of "match"—a contest, a fire-starting stick, or a romantic pairing—do not fit the context of mimicking surrounding colors.',
+    },
+    {
+      prompt:
+        "It can reasonably be inferred that scientists found the octopus's camouflage especially puzzling because:",
+      choices: [
+        "the animal appears unable to see the very colors it reproduces",
+        "octopuses change color only at night",
+        "chromatophores are too small to observe",
+        "octopuses rarely use camouflage in the wild",
+      ],
+      answerIndex: 0,
+      explanation:
+        "The first paragraph frames the puzzle directly: the octopus is colorblind yet matches colors. The passage never claims color change is nocturnal, that chromatophores can't be observed, or that camouflage is rare.",
+    },
+    {
+      prompt: "The fourth paragraph primarily serves to:",
+      choices: [
+        "explain the chemical makeup of octopus pigment",
+        "describe how engineers build adaptive materials",
+        "show that the skin's color changes serve communication, not only disguise",
+        "compare the octopus to other mollusks",
+      ],
+      answerIndex: 2,
+      explanation:
+        "The fourth paragraph introduces communication—flashing rival and courtship patterns at once—as a purpose beyond camouflage. Engineering applications appear in the fifth paragraph, and the chemistry and mollusk comparisons are not in the passage.",
+    },
+    {
+      prompt:
+        "The discovery of opsins in the octopus's skin (third paragraph) most strongly suggests that:",
+      choices: [
+        "the octopus's eyes are far more powerful than once believed",
+        "octopuses gradually lose their camouflage as they age",
+        "pigment sacs can open without any muscles",
+        "the skin may detect light on its own, apart from the eyes",
+      ],
+      answerIndex: 3,
+      explanation:
+        "The paragraph says the skin may register light directly, independent of the eyes. It makes no claim about the eyes being more powerful, about aging, or about sacs opening without muscles (the second paragraph says muscles open them).",
+    },
+    {
+      prompt: "The author's attitude toward the study of octopus skin can best be described as:",
+      choices: [
+        "skeptical and dismissive",
+        "intrigued and admiring",
+        "anxious and alarmed",
+        "bored and detached",
+      ],
+      answerIndex: 1,
+      explanation:
+        'Phrases like "most accomplished quick-change artists" and "Nature... has quietly solved a problem that human technology is only beginning to approach" convey admiration and curiosity, not skepticism, alarm, or boredom.',
+    },
+    {
+      prompt:
+        "According to the passage, one practical application researchers hope to develop from octopus skin is:",
+      choices: [
+        "materials that change color to match their surroundings",
+        "faster and quieter submarines",
+        "new medicines for human eyes",
+        "tools for counting wild octopus populations",
+      ],
+      answerIndex: 0,
+      explanation:
+        "The fifth paragraph names adaptive materials—color-shifting fabrics, flexible displays, and responsive camouflage. Submarines, eye medicines, and population-counting tools are never mentioned.",
+    },
+  ],
+};
+
+export function getSampleReading() {
+  return {
+    title: SAMPLE_READING.title,
+    genre: SAMPLE_READING.genre,
+    paragraphs: [...SAMPLE_READING.paragraphs],
+    questions: SAMPLE_READING.questions.map((q) => ({ ...q, choices: [...q.choices] })),
+  };
+}
+
 function shuffle(array) {
   const copy = [...array];
   for (let i = copy.length - 1; i > 0; i--) {

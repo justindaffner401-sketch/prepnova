@@ -7,10 +7,16 @@ export const MODEL = "claude-haiku-4-5-20251001";
 export const VALID_TESTS = ["ACT", "SAT"];
 export const VALID_SUBJECTS = ["Math", "English", "Reading", "Science"];
 
-// Which (test, subject) pairs use the passage-based exam-replica format
-// instead of the 5 standalone MCQs. Slice 1: ACT English only.
+// Which (test, subject) pairs use the ACT English passage format (underlined
+// spans + grouped questions) instead of the 5 standalone MCQs.
 export function isPassageMode(test, subject) {
   return test === "ACT" && subject === "English";
+}
+
+// ACT Reading uses the whole-passage comprehension format (no underlines; a
+// pinned passage with questions about it).
+export function isReadingMode(test, subject) {
+  return test === "ACT" && subject === "Reading";
 }
 
 export const SYSTEM_PROMPT =
@@ -338,4 +344,133 @@ export function renumberPassage(segments, questions) {
     .filter((s) => !s.underline || renumber.has(s.ref))
     .map((s) => (s.underline ? { ...s, ref: renumber.get(s.ref) } : s));
   return { segments: finalSegments, questions: finalQuestions };
+}
+
+/* ===================================================================
+ * ACT Reading — whole-passage comprehension format.
+ *
+ * No underlines: a single passage (numbered paragraphs) with standalone
+ * comprehension questions about it (main idea, inference, detail,
+ * vocabulary-in-context, function, tone). Mirrors the real ACT Reading
+ * section. Paired-passage (A/B) and graph variants are deferred.
+ * =================================================================== */
+
+export const READING_GENRES = [
+  "Literary Narrative",
+  "Social Science",
+  "Humanities",
+  "Natural Science",
+];
+
+export const READING_SCHEMA = {
+  type: "object",
+  properties: {
+    title: { type: "string" },
+    genre: { type: "string" },
+    paragraphs: { type: "array", items: { type: "string" } },
+    questions: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          prompt: { type: "string" },
+          choices: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                text: { type: "string" },
+                correct: { type: "boolean" },
+              },
+              required: ["text", "correct"],
+              additionalProperties: false,
+            },
+          },
+          explanation: { type: "string" },
+        },
+        required: ["prompt", "choices", "explanation"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["title", "genre", "paragraphs", "questions"],
+  additionalProperties: false,
+};
+
+export function buildReadingPrompt(test, subject) {
+  if (test !== "ACT" || subject !== "Reading") {
+    throw new Error(`Reading mode is not configured for ${test} ${subject}.`);
+  }
+  return `Write ONE realistic ACT Reading passage with comprehension questions, modeled exactly on the real ACT Reading test.
+
+HOW THE REAL SECTION WORKS: the student reads a full passage, then answers questions ABOUT it. Questions are not tied to underlined words; they ask about meaning, purpose, inferences, details, vocabulary in context, the function of a paragraph, and tone.
+
+Output a JSON object with "title", "genre", "paragraphs", and "questions".
+
+PASSAGE:
+- Pick ONE genre and put it in "genre": exactly one of "Literary Narrative", "Social Science", "Humanities", or "Natural Science".
+- Write a coherent 600-800 word passage in that genre and split it into "paragraphs" (an array of 5-8 paragraph strings, in order). Literary Narrative should read like a short story excerpt; the others like nonfiction.
+- The reader sees the paragraphs NUMBERED 1, 2, 3, … in order. Questions may refer to a paragraph by its number.
+
+QUESTIONS (write 9, all about the passage):
+- Use authentic ACT Reading stems and a realistic mix of these types:
+  - Main idea/purpose: "The main purpose of the passage is to:" or "The main idea of the [Nth] paragraph is that:".
+  - Detail: "According to the passage, ...".
+  - Inference: "It can reasonably be inferred from the passage that ...".
+  - Vocabulary-in-context: "As it is used in the [Nth] paragraph, the word \"X\" most nearly means:". X MUST be a word that actually appears in that paragraph.
+  - Function: "The [Nth] paragraph primarily serves to:" or "The author most likely includes [a quoted detail] in order to:".
+  - Tone/attitude: "The author's attitude toward [X] can best be described as:".
+- Refer to paragraphs by NUMBER (e.g., "the third paragraph") and QUOTE exact words/phrases from the passage. Do NOT use bare line numbers.
+- Every question is answerable strictly from the passage. "choices": exactly 4 objects { "text": "...", "correct": true|false }; mark exactly ONE correct and verify it against the passage. The three wrong choices must be clearly unsupported by the passage (not a second defensible reading).
+- Spread the correct answer across positions.
+- "explanation": 2-4 sentences pointing to the part of the passage that justifies the correct choice and naming why the most tempting wrong choice isn't supported. Refer to choices by their content, never by letter/position.
+- Plain text only: no markdown, no LaTeX.`;
+}
+
+export function validateReadingSet(text) {
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error("Claude returned something unreadable. Try generating again.");
+  }
+
+  const paragraphs = (Array.isArray(parsed?.paragraphs) ? parsed.paragraphs : [])
+    .filter((p) => typeof p === "string" && p.trim())
+    .map((p) => p.trim());
+  if (paragraphs.length < 3) {
+    throw new Error("The passage didn't come back complete. Try again.");
+  }
+
+  const rawQuestions = Array.isArray(parsed?.questions) ? parsed.questions : [];
+  const cleaned = [];
+  for (const q of rawQuestions) {
+    if (!q || typeof q.prompt !== "string" || !q.prompt.trim()) continue;
+    if (typeof q.explanation !== "string" || !q.explanation.trim()) continue;
+    if (!Array.isArray(q.choices) || q.choices.length !== 4) continue;
+    const texts = q.choices.map((c) => c?.text);
+    if (!texts.every((t) => typeof t === "string" && t.trim())) continue;
+    const correctIndexes = q.choices
+      .map((c, i) => (c?.correct === true ? i : -1))
+      .filter((i) => i !== -1);
+    if (correctIndexes.length !== 1) continue;
+    cleaned.push({
+      prompt: q.prompt.trim(),
+      choices: texts,
+      answerIndex: correctIndexes[0],
+      explanation: q.explanation,
+    });
+  }
+
+  if (cleaned.length < 5) {
+    throw new Error("Claude didn't return a complete set of questions. Try again.");
+  }
+
+  const genre = READING_GENRES.includes(parsed?.genre) ? parsed.genre : "Reading";
+  return {
+    title: typeof parsed?.title === "string" ? parsed.title.trim() : "",
+    genre,
+    paragraphs,
+    questions: cleaned.slice(0, 12),
+  };
 }

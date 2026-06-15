@@ -161,3 +161,32 @@ ${JSON.stringify(items)}`;
   const { segments, questions } = renumberPassage(adjusted, kept);
   return { verified: true, passage: { ...passage, segments, questions } };
 }
+
+/* ---------------- ACT Reading (whole-passage comprehension) ---------------- */
+
+// Returns { verified, reading }. Questions are all about the passage; disputed
+// ones are dropped. Falls back to the unverified set if dropping would leave
+// fewer than 5.
+export async function verifyReading(reading) {
+  if (!verifierEnabled() || reading.questions.length === 0) return { verified: false, reading };
+
+  const ctx = reading.paragraphs.map((p, i) => `[${i + 1}] ${p}`).join("\n\n");
+  const items = reading.questions.map((q, i) => ({ id: i, question: q.prompt, choices: q.choices }));
+  const user = `Below is an ACT Reading passage (paragraphs are numbered [1], [2], …). Answer each comprehension question using ONLY the passage.
+
+Return ONLY JSON shaped exactly like {"answers":[{"id":0,"choice":2}]} — one entry per id, where "choice" is the 0-based index of the single best answer.
+
+PASSAGE:
+${ctx}
+
+QUESTIONS:
+${JSON.stringify(items)}`;
+
+  const map = await callVerifier(user);
+  if (!map) return { verified: false, reading };
+
+  const kept = reading.questions.filter((q, i) => agrees(map, i, q));
+  if (kept.length === reading.questions.length) return { verified: true, reading };
+  if (kept.length < 5) return { verified: false, reading };
+  return { verified: true, reading: { ...reading, questions: kept } };
+}
