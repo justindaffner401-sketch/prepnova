@@ -268,7 +268,8 @@ const SAMPLE_PASSAGE = {
   questions: [
     {
       ref: 1,
-      prompt: "Which choice most effectively emphasizes how much longer the narrator stayed than originally planned?",
+      prompt:
+        "Given that all the choices are accurate, which one most effectively emphasizes how much longer the narrator stayed than she had originally planned?",
       choices: [
         "NO CHANGE",
         "Eventually, I wandered back in.",
@@ -277,11 +278,11 @@ const SAMPLE_PASSAGE = {
       ],
       answerIndex: 0,
       explanation:
-        'Pairing "Two years later" with "still showing up" sets the long stretch against the one-flat-tire plan, which is exactly the contrast the prompt wants. "The next weekend" badly understates the span, and the other options stay vague about how much time passed.',
+        'Pairing "Two years later" with "still showing up" sets the long stretch against the one-flat-tire plan, which is exactly the emphasis the question asks for. "The next weekend" badly understates the span, and the other options stay vague about how much time passed.',
     },
     {
       ref: 2,
-      prompt: "",
+      prompt: "Which choice makes the sentence most grammatically acceptable?",
       choices: [
         "NO CHANGE",
         "a cramped garage packed with secondhand parts",
@@ -294,7 +295,7 @@ const SAMPLE_PASSAGE = {
     },
     {
       ref: 3,
-      prompt: "",
+      prompt: "Which choice provides the most logical transition from the preceding sentence?",
       choices: ["NO CHANGE", "For example,", "However,", "Meanwhile,"],
       answerIndex: 2,
       explanation:
@@ -302,7 +303,7 @@ const SAMPLE_PASSAGE = {
     },
     {
       ref: 4,
-      prompt: "",
+      prompt: "Which choice is least redundant in context?",
       choices: [
         "NO CHANGE",
         "that was particular and specific to it",
@@ -311,11 +312,11 @@ const SAMPLE_PASSAGE = {
       ],
       answerIndex: 2,
       explanation:
-        '"Its own thread size" already says the size is unique to that bolt, so the underlined clause only repeats the idea. Deleting it is the most concise fix; every other choice keeps restating the same point in different words.',
+        '"Its own thread size" already says the size is unique to that bolt, so the underlined clause only repeats the idea. Deleting it is the least redundant option; every other choice keeps restating the same point in different words.',
     },
     {
       ref: 5,
-      prompt: "",
+      prompt: "Which choice makes the sentence most grammatically acceptable?",
       choices: ["NO CHANGE", "were", "is", "has been"],
       answerIndex: 1,
       explanation:
@@ -323,7 +324,7 @@ const SAMPLE_PASSAGE = {
     },
     {
       ref: 6,
-      prompt: "",
+      prompt: "Which choice makes the sentence most grammatically acceptable?",
       choices: ["NO CHANGE", "There", "They're", "Their"],
       answerIndex: 3,
       explanation:
@@ -331,7 +332,7 @@ const SAMPLE_PASSAGE = {
     },
     {
       ref: 7,
-      prompt: "",
+      prompt: "Which choice makes the sentence most grammatically acceptable?",
       choices: [
         "NO CHANGE",
         "in a smooth and silent way.",

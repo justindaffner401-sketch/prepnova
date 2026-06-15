@@ -1,13 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  BookOpen,
-  Check,
-  ChevronRight,
-  Clock,
-  PenLine,
-  Sparkles,
-  XIcon,
-} from "./icons.jsx";
+import { BookOpen, Check, ChevronRight, Clock, Sparkles, XIcon } from "./icons.jsx";
 
 // The ACT alternates answer letters: odd-numbered questions use A-D, even use
 // F-J. Pick the set by the question's display number (1-based).
@@ -202,17 +194,9 @@ export default function PassageRunner({ passage, test, subject, source, onExit, 
             )}
           </div>
 
-          {question.prompt ? (
-            <p className="mt-3 leading-relaxed font-medium text-white sm:text-lg">
-              {question.prompt}
-            </p>
-          ) : (
-            <p className="mt-3 flex items-center gap-2 text-sm text-slate-400">
-              <PenLine className="h-4 w-4 shrink-0 text-electric-400" />
-              Choose the best version of underlined portion{" "}
-              <span className="font-semibold text-electric-300">{question.ref}</span>.
-            </p>
-          )}
+          <p className="mt-3 leading-relaxed font-medium text-white sm:text-lg">
+            {question.prompt || "Which choice makes the sentence most grammatically acceptable?"}
+          </p>
 
           <div className="mt-5 space-y-2.5">
             {question.choices.map((choice, i) => {

@@ -174,39 +174,39 @@ export function buildPassagePrompt(test, subject) {
   if (test !== "ACT" || subject !== "English") {
     throw new Error(`Passage mode is not configured for ${test} ${subject}.`);
   }
-  return `Write ONE realistic ACT English passage with questions, modeled exactly on the real ACT English test.
+  return `Write ONE realistic passage with questions, modeled EXACTLY on the current digital ACT English test.
 
-HOW THE REAL SECTION WORKS: a passage is printed with certain portions UNDERLINED and numbered. Most questions ask the student to choose the best version of an underlined portion ("NO CHANGE" or a replacement). A few questions are about the passage as a WHOLE and are NOT tied to any underline.
+HOW THE REAL SECTION WORKS: a passage is printed with certain portions UNDERLINED and numbered. EVERY question has an explicit question stem (the digital ACT never just shows answer choices — it always asks a specific question). Most questions refer to an underlined portion; a few are about the passage as a whole.
 
 Output a JSON object with "title", "segments", and "questions".
 
 PASSAGE ("title" + "segments"):
-- Write a coherent 380-460 word passage — a first-person narrative, a biographical/history piece, or a popular-science/culture piece (the usual ACT subjects).
+- Write a coherent 380-460 word passage — a first-person narrative, a biography/history piece, or a popular-science/culture piece (the usual ACT subjects).
 - Break the FULL passage into ordered "segments" that, read in order, reproduce the passage exactly with no gaps or overlaps.
 - Plain-text segment: { "text": "...", "underline": false, "ref": 0 }.
 - Underlined segment: { "text": "<the underlined words>", "underline": true, "ref": N } where N is its number.
 - Number the underlines 1, 2, 3, … in reading order with NO gaps. Use 8 to 11 underlines.
-- Underlined spans are SHORT — a word, phrase, or single clause — the exact text a question asks about. Deliberately write some underlined spans with an error (a grammar/punctuation mistake, a redundancy, or an awkward choice) so the question can fix it; write others correctly so "NO CHANGE" is sometimes right.
+- Underlined spans are SHORT — a word, phrase, or single clause. For grammar/redundancy questions, deliberately write the underlined span with the error the question fixes; for "NO CHANGE"-correct questions, write it correctly.
 
-QUESTIONS: write one question per underline PLUS exactly 1-2 whole-passage questions (see TYPE E/F). Use this realistic mix of types:
+EVERY QUESTION MUST HAVE A STEM. Use these EXACT stems by type (copy the wording, filling in brackets):
 
-TYPE A — Grammar/usage (most common). No prompt needed. Tests punctuation (commas, semicolons, apostrophes, colons), subject-verb agreement, pronoun case/agreement, verb tense/form, modifiers, and sentence boundaries (fixing comma splices, run-ons, fragments). Set "prompt": "". First choice text is "NO CHANGE"; the other three are replacement texts. One choice may be "DELETE the underlined portion." when removing it is grammatical.
+TYPE A — Grammar/usage/punctuation (the majority). Stem EXACTLY: "Which choice makes the sentence most grammatically acceptable?" Tests punctuation (commas, semicolons, apostrophes, colons), subject-verb agreement, pronoun case/agreement, verb tense/form, modifiers, and sentence boundaries (comma splices, run-ons, fragments). First choice text "NO CHANGE"; the other three are full replacement texts for the underlined span. One choice may be "DELETE the underlined portion." when removing it is grammatical.
 
-TYPE B — Redundancy/conciseness. No prompt ("prompt": ""). The underlined span repeats an idea already stated. The correct answer is the most concise version — often "DELETE the underlined portion." or "OMIT the underlined portion." First choice "NO CHANGE". Include at least ONE of these.
+TYPE B — Redundancy/conciseness. Stem EXACTLY: "Which choice is least redundant in context?" The underlined span repeats an idea already stated nearby; the correct answer removes the repetition — frequently "DELETE the underlined portion." First choice "NO CHANGE". Include at least ONE of these.
 
-TYPE C — Rhetorical/strategy (tied to an underline). Write a real "prompt" using authentic ACT phrasing, e.g.: "Which choice most effectively introduces the main focus of the essay?", "Which choice best concludes the sentence/paragraph?", "Which choice most effectively maintains the essay's tone?", or "The writer wants to [specific goal]. Which choice best accomplishes that goal?". First choice "NO CHANGE"; others are replacement texts. Include 1-2 of these.
+TYPE C — Rhetorical/detail (tied to an underline). Stem begins EXACTLY "Given that all the choices are accurate, which one " then a specific goal, e.g.: "...best introduces the paragraph?", "...most effectively concludes the essay?", "...sets up a contrast regarding [specific thing]?", or "...most clearly uses specific details to support the [specific claim]?". ALL FOUR choices must be factually plausible sentences (no grammar errors); exactly one best serves the stated goal. First choice "NO CHANGE". Include 2-3 of these.
 
-TYPE D — Add/delete a sentence (tied to an underline). "prompt" like: "The writer is considering deleting the underlined portion. Should it be kept or deleted?". The four choices are full sentences beginning "Kept, because…", "Kept, because…", "Deleted, because…", "Deleted, because…". (Optional — include at most one.)
+TYPE D — Whole-essay purpose (REQUIRED — exactly one, "ref": 0, listed LAST). Stem EXACTLY: "Suppose the writer's primary purpose had been to [a specific purpose]. Would this essay accomplish that purpose?" The four choices begin "Yes, because…", "Yes, because…", "No, because…", "No, because…", exactly one correct based on what the essay actually does.
 
-TYPE E — Whole-essay purpose (REQUIRED, exactly one, listed LAST). Set "ref": 0 (NOT tied to an underline). "prompt": "Suppose the writer's primary purpose had been to [a specific purpose]. Would this essay accomplish that purpose?". The four choices begin "Yes, because…", "Yes, because…", "No, because…", "No, because…", with exactly one correct based on what the essay actually does.
-
-TYPE F — Whole-essay addition (OPTIONAL, ref: 0). "prompt": "The writer is considering adding the following sentence: '[sentence]'. Should the writer make this addition?". Choices begin "Yes, because…" / "No, because…".
+DO NOT create questions that ask the student to REORDER sentences, choose a "sequence of sentences," or place a sentence "at Point A/B/C/D" — those are not supported here.
 
 RULES FOR EVERY QUESTION:
-- "ref": for a question tied to an underline, match that underline's number. For a whole-passage question (TYPE E/F), use "ref": 0.
-- "choices": exactly 4 objects { "text": "...", "correct": true|false }. ACTUALLY SOLVE each one: mark exactly ONE choice "correct": true and verify it is genuinely best.
-- For underline questions, the first choice's text must be "NO CHANGE" (except TYPE D/E/F, which use the Kept/Deleted or Yes/No wording).
-- Spread the correct answer across positions — "NO CHANGE"/"Yes" should NOT always be correct.
+- "ref": for an underline question, match that underline's number. For the whole-essay question, use "ref": 0.
+- "prompt": the exact stem for that type (never empty).
+- "choices": exactly 4 objects { "text": "...", "correct": true|false }. ACTUALLY SOLVE each one and mark exactly ONE "correct": true.
+- For TYPE A/B/C the first choice text is "NO CHANGE". For TYPE D use the Yes/No wording.
+- COHERENCE CHECK: read the full sentence with the correct choice substituted in — it must be smooth and correct. The three wrong choices must each be CLEARLY worse (a real grammar error, an added redundancy, or a poorer fit for the goal), never a second defensible answer.
+- Spread the correct answer across positions — "NO CHANGE"/"Yes" must NOT always be correct.
 - "explanation": 2-4 sentences defending the correct choice and naming why the most tempting wrong choice fails. Refer to choices by their content, never by letter/position.
 - Plain text only: no markdown, no LaTeX.`;
 }
