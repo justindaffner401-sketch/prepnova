@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import SectionRunner from "../components/SectionRunner.jsx";
-import { SECTION_PLANS, EXAM_SECTIONS, assembleSection } from "../lib/section.js";
+import { assembleSection } from "../lib/section.js";
+import { SECTION_PLANS, EXAM_SECTIONS } from "../lib/sectionPlans.js";
 import { getApiKey, saveResult } from "../lib/storage.js";
 import { authEnabled } from "../lib/supabase.js";
 import { useAuth } from "../lib/useAuth.js";
-import { ArrowRight, Bolt, Check, Clock, RotateCcw } from "../components/icons.jsx";
+import { ArrowRight, Bolt, Check, Clock, RotateCcw, Sparkles } from "../components/icons.jsx";
 
 const TESTS = ["ACT", "SAT"];
 const sectionsForTest = (test) => Object.keys(SECTION_PLANS).filter((k) => k.startsWith(`${test}-`));
@@ -23,9 +24,11 @@ export default function Exam() {
   const [sectionKey, setSectionKey] = useState("ACT-English");
   const [minutes, setMinutes] = useState(SECTION_PLANS["ACT-English"].minutes);
 
-  const [queue, setQueue] = useState([]);
+  const [prebuilt, setPrebuilt] = useState([]); // manifest summaries
+  const [runQueue, setRunQueue] = useState([]); // [{ planKey, label, test, minutes, units|null }]
   const [queueIndex, setQueueIndex] = useState(0);
   const [units, setUnits] = useState(null);
+  const [runLabel, setRunLabel] = useState(""); // "ACT Practice Exam 1" or section label
   const [progress, setProgress] = useState({ done: 0, total: 1, label: "" });
   const [results, setResults] = useState([]); // { key, label, score, total }
   const [error, setError] = useState("");
@@ -35,6 +38,14 @@ export default function Exam() {
     document.title = "PrepNova — Full-length exam";
   }, []);
   useEffect(() => () => abortRef.current?.abort(), []);
+
+  // Load the prebuilt-exam library (static).
+  useEffect(() => {
+    fetch("/exams/index.json")
+      .then((r) => (r.ok ? r.json() : { exams: [] }))
+      .then((d) => setPrebuilt(Array.isArray(d?.exams) ? d.exams : []))
+      .catch(() => setPrebuilt([]));
+  }, []);
 
   function pickTest(t) {
     setTest(t);
@@ -47,18 +58,17 @@ export default function Exam() {
     setMinutes(SECTION_PLANS[key].minutes);
   }
 
-  const currentPlan = queue[queueIndex] ? SECTION_PLANS[queue[queueIndex]] : null;
-  const sectionSeconds =
-    mode === "exam" && currentPlan ? currentPlan.minutes * 60 : Math.max(1, minutes) * 60;
+  const current = runQueue[queueIndex] || null;
+  const durationSeconds = current ? Math.max(1, current.minutes) * 60 : 60;
 
-  async function assemble(key) {
+  async function assemble(planKey) {
     setPhase("loading");
     setError("");
-    setProgress({ done: 0, total: SECTION_PLANS[key].units.length, label: "Starting…" });
+    setProgress({ done: 0, total: SECTION_PLANS[planKey].units.length, label: "Starting…" });
     const controller = new AbortController();
     abortRef.current = controller;
     try {
-      const built = await assembleSection(key, {
+      const built = await assembleSection(planKey, {
         apiKey: getApiKey(),
         signal: controller.signal,
         onProgress: setProgress,
@@ -72,31 +82,78 @@ export default function Exam() {
     }
   }
 
-  function start() {
-    if (!aiAvailable) return;
-    const q = mode === "exam" ? EXAM_SECTIONS[test] : [sectionKey];
-    setQueue(q);
+  // Begin running a queue from index 0.
+  function beginQueue(queue, label) {
+    setRunQueue(queue);
+    setRunLabel(label);
     setQueueIndex(0);
     setResults([]);
-    assemble(q[0]);
+    enterItem(queue, 0);
+  }
+
+  function enterItem(queue, idx) {
+    const item = queue[idx];
+    if (item.units) {
+      setUnits(item.units);
+      setPhase("active");
+    } else {
+      assemble(item.planKey);
+    }
+  }
+
+  function startSectionRun() {
+    const plan = SECTION_PLANS[sectionKey];
+    beginQueue([{ planKey: sectionKey, label: plan.label, test: plan.test, minutes, units: null }], plan.label);
+  }
+  function startExamRun() {
+    const queue = EXAM_SECTIONS[test].map((k) => ({
+      planKey: k,
+      label: SECTION_PLANS[k].label,
+      test,
+      minutes: SECTION_PLANS[k].minutes,
+      units: null,
+    }));
+    beginQueue(queue, `${test} full exam`);
+  }
+  async function startPrebuilt(summary) {
+    setPhase("loading");
+    setProgress({ done: 0, total: 1, label: "Loading exam…" });
+    try {
+      const res = await fetch(`/exams/${summary.id}.json`);
+      if (!res.ok) throw new Error("Couldn't load that exam.");
+      const exam = await res.json();
+      const queue = exam.sections.map((s) => ({
+        planKey: s.planKey,
+        label: s.label,
+        test: exam.test,
+        minutes: s.minutes,
+        units: s.units,
+      }));
+      beginQueue(queue, exam.label);
+    } catch (e) {
+      setError(e.message || "Couldn't load that exam.");
+      setPhase("error");
+    }
   }
 
   function handleSectionComplete({ score, total }) {
-    const key = queue[queueIndex];
-    const plan = SECTION_PLANS[key];
-    saveResult({ test: plan.test, subject: plan.subject, score, total, source: "exam" });
-    setResults((r) => [...r, { key, label: plan.label, score, total }]);
-    if (queueIndex + 1 < queue.length) {
-      setPhase("break");
-    } else {
-      setPhase("done");
-    }
+    const item = runQueue[queueIndex];
+    saveResult({
+      test: item.test,
+      subject: SECTION_PLANS[item.planKey].subject,
+      score,
+      total,
+      source: "exam",
+    });
+    setResults((r) => [...r, { key: item.planKey, label: item.label, score, total }]);
+    if (queueIndex + 1 < runQueue.length) setPhase("break");
+    else setPhase("done");
   }
 
   function nextSection() {
     const next = queueIndex + 1;
     setQueueIndex(next);
-    assemble(queue[next]);
+    enterItem(runQueue, next);
   }
 
   function cancelLoading() {
@@ -107,6 +164,7 @@ export default function Exam() {
   const totalScore = results.reduce((a, r) => a + r.score, 0);
   const totalQuestions = results.reduce((a, r) => a + r.total, 0);
   const pct = totalQuestions ? Math.round((totalScore / totalQuestions) * 100) : 0;
+  const prebuiltForTest = prebuilt.filter((e) => e.test === test);
 
   return (
     <main className="container-pn pt-28 pb-20 sm:pt-36">
@@ -120,11 +178,11 @@ export default function Exam() {
             Take a real-length exam
           </h1>
           <p className="mt-2 text-sm text-slate-400">
-            A whole section — or the entire test — generated fresh and verified, on a clock you choose.
+            A ready-made full exam that loads instantly — or generate a section fresh, on a clock you choose.
           </p>
 
+          {/* Test */}
           <div className="glass mt-6 p-6 sm:p-7">
-            {/* Test */}
             <p className="text-xs font-semibold tracking-widest text-slate-500 uppercase">Test</p>
             <div className="mt-2 flex gap-2">
               {TESTS.map((t) => (
@@ -143,14 +201,45 @@ export default function Exam() {
               ))}
             </div>
 
-            {/* Mode */}
-            <p className="mt-5 text-xs font-semibold tracking-widest text-slate-500 uppercase">
-              What to take
+            {/* Prebuilt library */}
+            {prebuiltForTest.length > 0 && (
+              <div className="mt-6">
+                <p className="flex items-center gap-2 text-xs font-semibold tracking-widest text-emerald-300 uppercase">
+                  <Sparkles className="h-3.5 w-3.5" /> Ready-made exams · instant
+                </p>
+                <div className="mt-2 grid gap-2">
+                  {prebuiltForTest.map((e) => (
+                    <button
+                      key={e.id}
+                      type="button"
+                      onClick={() => startPrebuilt(e)}
+                      disabled={!aiAvailable}
+                      className={`flex items-center justify-between rounded-xl border border-emerald-400/30 bg-emerald-500/[0.06] px-4 py-3 text-left transition hover:border-emerald-400/60 ${
+                        aiAvailable ? "" : "cursor-not-allowed opacity-50"
+                      }`}
+                    >
+                      <div>
+                        <p className="font-display text-sm font-bold text-white">{e.label}</p>
+                        <p className="text-xs text-slate-400">
+                          {e.sections.length} sections ·{" "}
+                          {e.sections.reduce((a, s) => a + (s.questions || 0), 0)} questions
+                        </p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-emerald-300" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Generate fresh */}
+            <p className="mt-6 text-xs font-semibold tracking-widest text-slate-500 uppercase">
+              Or generate fresh
             </p>
             <div className="mt-2 flex gap-2">
               {[
                 ["section", "One section"],
-                ["exam", "Full exam (all sections)"],
+                ["exam", "Full exam"],
               ].map(([m, label]) => (
                 <button
                   key={m}
@@ -167,13 +256,9 @@ export default function Exam() {
               ))}
             </div>
 
-            {/* Section picker (single mode) */}
             {mode === "section" && (
               <>
-                <p className="mt-5 text-xs font-semibold tracking-widest text-slate-500 uppercase">
-                  Section
-                </p>
-                <div className="mt-2 grid grid-cols-2 gap-2">
+                <div className="mt-3 grid grid-cols-2 gap-2">
                   {sectionsForTest(test).map((key) => {
                     const plan = SECTION_PLANS[key];
                     return (
@@ -194,8 +279,7 @@ export default function Exam() {
                   })}
                 </div>
 
-                {/* Timer */}
-                <p className="mt-5 text-xs font-semibold tracking-widest text-slate-500 uppercase">
+                <p className="mt-4 text-xs font-semibold tracking-widest text-slate-500 uppercase">
                   Timer
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -232,18 +316,15 @@ export default function Exam() {
               </>
             )}
 
-            {mode === "exam" && (
-              <p className="mt-5 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
-                <Clock className="h-4 w-4 shrink-0 text-electric-400" />
-                {EXAM_SECTIONS[test].length} sections, back-to-back, each on its real time limit.
-              </p>
-            )}
-
             <div className="mt-6 border-t border-white/10 pt-5">
               {aiAvailable ? (
-                <button type="button" onClick={start} className="btn-primary w-full">
+                <button
+                  type="button"
+                  onClick={mode === "exam" ? startExamRun : startSectionRun}
+                  className="btn-primary w-full"
+                >
                   <Bolt className="h-4 w-4" />
-                  {mode === "exam" ? "Start full exam" : "Start section"}
+                  {mode === "exam" ? "Generate full exam" : "Generate section"}
                 </button>
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -266,23 +347,24 @@ export default function Exam() {
         </div>
       )}
 
-      {/* ---------------- Loading / assembling ---------------- */}
+      {/* ---------------- Loading ---------------- */}
       {phase === "loading" && (
         <div className="glass mx-auto max-w-md p-10 text-center">
           <div className="anim-spin-slow mx-auto h-14 w-14 rounded-full border-4 border-electric-500/20 border-t-electric-400" />
-          <p className="mt-6 font-display font-bold text-white">
-            Building {SECTION_PLANS[queue[queueIndex]]?.label}…
-          </p>
-          <p className="mt-2 text-sm text-slate-400">{progress.label}</p>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-electric-500 to-cyan-400 transition-all"
-              style={{ width: `${Math.round((progress.done / progress.total) * 100)}%` }}
-            />
-          </div>
-          <p className="mt-2 text-xs text-slate-500">
-            Part {Math.min(progress.done + 1, progress.total)} of {progress.total} · generating &amp; verifying
-          </p>
+          <p className="mt-6 font-display font-bold text-white">{progress.label || "Loading…"}</p>
+          {progress.total > 1 && (
+            <>
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-electric-500 to-cyan-400 transition-all"
+                  style={{ width: `${Math.round((progress.done / progress.total) * 100)}%` }}
+                />
+              </div>
+              <p className="mt-2 text-xs text-slate-500">
+                Part {Math.min(progress.done + 1, progress.total)} of {progress.total} · generating &amp; verifying
+              </p>
+            </>
+          )}
           <button type="button" onClick={cancelLoading} className="btn-ghost btn-sm mt-6">
             Cancel
           </button>
@@ -290,12 +372,12 @@ export default function Exam() {
       )}
 
       {/* ---------------- Active section ---------------- */}
-      {phase === "active" && units && currentPlan && (
+      {phase === "active" && units && current && (
         <SectionRunner
           units={units}
-          test={currentPlan.test}
-          subjectLabel={currentPlan.label}
-          durationSeconds={sectionSeconds}
+          test={current.test}
+          subjectLabel={current.label}
+          durationSeconds={durationSeconds}
           onExit={() => {
             if (window.confirm("Leave the exam? Progress won't be saved.")) navigate("/select");
           }}
@@ -303,7 +385,7 @@ export default function Exam() {
         />
       )}
 
-      {/* ---------------- Between sections (exam mode) ---------------- */}
+      {/* ---------------- Between sections ---------------- */}
       {phase === "break" && (
         <div className="anim-fade-up glass mx-auto max-w-md p-8 text-center">
           <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-emerald-500/15 text-emerald-400">
@@ -315,9 +397,7 @@ export default function Exam() {
           <p className="mt-2 text-sm text-slate-400">
             Score so far: {totalScore}/{totalQuestions} ({pct}%)
           </p>
-          <p className="mt-1 text-xs text-slate-500">
-            Next: {SECTION_PLANS[queue[queueIndex + 1]]?.label}
-          </p>
+          <p className="mt-1 text-xs text-slate-500">Next: {runQueue[queueIndex + 1]?.label}</p>
           <button type="button" onClick={nextSection} className="btn-primary mt-6">
             Continue
             <ArrowRight className="h-4 w-4" />
@@ -328,16 +408,11 @@ export default function Exam() {
       {/* ---------------- Error ---------------- */}
       {phase === "error" && (
         <div className="anim-fade-up glass mx-auto max-w-md p-8 text-center">
-          <h2 className="font-display text-xl font-bold text-white">Couldn't build the exam</h2>
+          <h2 className="font-display text-xl font-bold text-white">Something went wrong</h2>
           <p className="mt-2 text-sm text-slate-400">{error}</p>
-          <div className="mt-6 flex justify-center gap-3">
-            <button type="button" onClick={() => assemble(queue[queueIndex])} className="btn-primary">
-              <RotateCcw className="h-4 w-4" /> Try again
-            </button>
-            <button type="button" onClick={() => setPhase("setup")} className="btn-ghost">
-              Back to setup
-            </button>
-          </div>
+          <button type="button" onClick={() => setPhase("setup")} className="btn-primary mt-6">
+            <RotateCcw className="h-4 w-4" /> Back to setup
+          </button>
         </div>
       )}
 
@@ -346,7 +421,7 @@ export default function Exam() {
         <div className="anim-fade-up mx-auto max-w-xl text-center">
           <div className="glass p-8 sm:p-10">
             <p className="font-display text-xs font-bold tracking-widest text-electric-400 uppercase">
-              {mode === "exam" ? "Full exam" : "Section"} complete
+              {runLabel} complete
             </p>
             <p className="mt-3 font-display text-5xl font-extrabold text-white">{pct}%</p>
             <p className="mt-1 text-sm text-slate-400">
@@ -361,8 +436,7 @@ export default function Exam() {
                 >
                   <span className="text-sm font-semibold text-white">{r.label}</span>
                   <span className="text-sm text-slate-300">
-                    {r.score}/{r.total} ·{" "}
-                    {r.total ? Math.round((r.score / r.total) * 100) : 0}%
+                    {r.score}/{r.total} · {r.total ? Math.round((r.score / r.total) * 100) : 0}%
                   </span>
                 </div>
               ))}
