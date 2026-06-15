@@ -392,12 +392,12 @@ export default function Account() {
                       <span className="font-display font-bold text-white">1 Year</span>
                       <span>
                         <span className="font-display text-2xl font-extrabold text-white">$250</span>
-                        <span className="text-sm text-slate-400"> once</span>
+                        <span className="text-sm text-slate-400">/yr</span>
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-electric-200/90">
-                      <span className="text-slate-500 line-through">$348 value</span> — save $98 over
-                      a full year.
+                      <span className="text-slate-500 line-through">$348/yr</span> — save $98 vs
+                      paying monthly. Renews yearly.
                     </p>
                     <button
                       type="button"

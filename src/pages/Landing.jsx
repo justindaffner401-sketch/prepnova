@@ -281,10 +281,10 @@ export default function Landing() {
               <p className="font-display font-bold text-white">1 Year</p>
               <p className="mt-3">
                 <span className="font-display text-4xl font-extrabold text-white">$250</span>
-                <span className="ml-1 text-sm text-slate-300">once</span>
+                <span className="ml-1 text-sm text-slate-300">/year</span>
               </p>
               <p className="mt-2 text-xs text-electric-200/90">
-                <span className="text-slate-500 line-through">$348 value</span> — save $98.
+                <span className="text-slate-500 line-through">$348/yr</span> — save $98 vs monthly.
               </p>
               <div className="flex-1" />
               <Link to={authEnabled ? "/account" : "/select"} className="btn-primary mt-6 w-full">

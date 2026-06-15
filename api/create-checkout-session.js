@@ -27,9 +27,13 @@ export default async function handler(req, res) {
   const plan = ["monthly", "year", "lifetime"].includes(req.body?.plan)
     ? req.body.plan
     : "monthly";
-  const oneTimePriceId =
-    plan === "year" ? STRIPE_YEAR_PRICE_ID : plan === "lifetime" ? STRIPE_LIFETIME_PRICE_ID : null;
-  if (plan !== "monthly" && !oneTimePriceId) {
+
+  // monthly & year are recurring subscriptions; lifetime is a one-time payment.
+  const subscriptionPriceId = plan === "year" ? STRIPE_YEAR_PRICE_ID : STRIPE_PRICE_ID;
+  if (plan === "year" && !STRIPE_YEAR_PRICE_ID) {
+    return res.status(503).json({ error: "That plan isn't available yet." });
+  }
+  if (plan === "lifetime" && !STRIPE_LIFETIME_PRICE_ID) {
     return res.status(503).json({ error: "That plan isn't available yet." });
   }
 
@@ -82,20 +86,25 @@ export default async function handler(req, res) {
     };
 
     const params =
-      plan === "monthly"
+      plan === "lifetime"
         ? {
             ...common,
-            mode: "subscription",
-            line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
-            subscription_data: { trial_period_days: TRIAL_DAYS },
+            mode: "payment",
+            line_items: [{ price: STRIPE_LIFETIME_PRICE_ID, quantity: 1 }],
+            // The webhook reads metadata.plan to grant "lifetime".
+            metadata: { plan: "lifetime" },
+            payment_intent_data: {
+              metadata: { plan: "lifetime", supabase_user_id: user.id },
+            },
           }
         : {
             ...common,
-            mode: "payment",
-            line_items: [{ price: oneTimePriceId, quantity: 1 }],
-            // The webhook reads metadata.plan to set "year" vs "lifetime".
-            metadata: { plan },
-            payment_intent_data: { metadata: { plan, supabase_user_id: user.id } },
+            mode: "subscription",
+            line_items: [{ price: subscriptionPriceId, quantity: 1 }],
+            // 7-day free trial on the monthly plan only.
+            ...(plan === "monthly"
+              ? { subscription_data: { trial_period_days: TRIAL_DAYS } }
+              : {}),
           };
 
     const session = await stripe.checkout.sessions.create(params);
