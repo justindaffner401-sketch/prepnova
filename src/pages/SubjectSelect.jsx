@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getLastSelection, setLastSelection } from "../lib/storage.js";
+import PortalTransition from "../components/PortalTransition.jsx";
 import {
   ArrowRight,
   BookOpen,
@@ -35,6 +36,7 @@ export default function SubjectSelect() {
   const last = getLastSelection();
   const [test, setTest] = useState(last?.test ?? null);
   const [subject, setSubject] = useState(last?.subject ?? null);
+  const [launching, setLaunching] = useState(false);
 
   useEffect(() => {
     document.title = "PrepNova — Choose your focus";
@@ -43,13 +45,20 @@ export default function SubjectSelect() {
   const ready = Boolean(test && subject);
 
   function start() {
-    if (!ready) return;
+    if (!ready || launching) return;
     setLastSelection({ test, subject });
-    navigate(`/practice?test=${test}&subject=${subject}`);
+    setLaunching(true); // play the portal, then navigate when it finishes
   }
 
   return (
     <main className="container-pn pt-28 pb-20 sm:pt-36">
+      {launching && (
+        <PortalTransition
+          test={test}
+          subject={subject}
+          onDone={() => navigate(`/practice?test=${test}&subject=${subject}`)}
+        />
+      )}
       <div className="mx-auto max-w-3xl">
         <p className="font-display text-xs font-bold tracking-widest text-electric-400 uppercase">
           Step 1 of 2
