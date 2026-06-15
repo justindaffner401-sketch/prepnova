@@ -174,33 +174,52 @@ export function buildPassagePrompt(test, subject) {
   if (test !== "ACT" || subject !== "English") {
     throw new Error(`Passage mode is not configured for ${test} ${subject}.`);
   }
-  return `Write ONE realistic ACT English passage with grammar/style/rhetoric questions, exactly like the real digital ACT.
+  return `Write ONE realistic ACT English passage with questions, modeled exactly on the real ACT English test.
 
-How the real section works: the passage is printed with certain portions UNDERLINED and numbered. Each numbered underline has a question; the student chooses the best version of that underlined portion ("NO CHANGE" or a replacement).
+HOW THE REAL SECTION WORKS: a passage is printed with certain portions UNDERLINED and numbered. Most questions ask the student to choose the best version of an underlined portion ("NO CHANGE" or a replacement). A few questions are about the passage as a WHOLE and are NOT tied to any underline.
 
 Output a JSON object with "title", "segments", and "questions".
 
 PASSAGE ("title" + "segments"):
-- Write a coherent 350-450 word passage (a personal essay, history, or popular-science piece — the usual ACT subjects).
+- Write a coherent 380-460 word passage — a first-person narrative, a biographical/history piece, or a popular-science/culture piece (the usual ACT subjects).
 - Break the FULL passage into ordered "segments" that, read in order, reproduce the passage exactly with no gaps or overlaps.
-- A plain-text segment is { "text": "...", "underline": false, "ref": 0 }.
-- An underlined segment is { "text": "<the underlined words>", "underline": true, "ref": N } where N is its number.
-- Number the underlines 1, 2, 3, … in reading order with NO gaps. Use 6 to 9 underlines.
-- Underlined spans should be short (a few words or one clause) — the exact text a question asks you to fix or improve.
+- Plain-text segment: { "text": "...", "underline": false, "ref": 0 }.
+- Underlined segment: { "text": "<the underlined words>", "underline": true, "ref": N } where N is its number.
+- Number the underlines 1, 2, 3, … in reading order with NO gaps. Use 8 to 11 underlines.
+- Underlined spans are SHORT — a word, phrase, or single clause — the exact text a question asks about. Deliberately write some underlined spans with an error (a grammar/punctuation mistake, a redundancy, or an awkward choice) so the question can fix it; write others correctly so "NO CHANGE" is sometimes right.
 
-QUESTIONS (one per underline):
-- Exactly one question per underlined ref, and its "ref" must match that underline's number.
-- Cover a realistic mix: subject-verb agreement, pronouns, verb tense, punctuation (commas/semicolons/apostrophes), conciseness/redundancy, transitions/word choice, and at least one rhetorical question (e.g. "Which choice most effectively…").
-- "prompt": for a plain grammar fix, use "" (empty) — the underlined text itself is the question. For a rhetorical/strategy question, write the actual question (e.g. "Which choice best emphasizes the writer's surprise?").
-- "choices": exactly 4 objects { "text": "...", "correct": true|false }. For grammar-fix questions the first choice's text must be "NO CHANGE". The other choices are full replacement texts for the underlined span (NOT "NO CHANGE").
-- ACTUALLY SOLVE each one: mark exactly ONE choice "correct": true and verify it is genuinely best. Spread the correct answer across positions (don't always pick "NO CHANGE").
+QUESTIONS: write one question per underline PLUS exactly 1-2 whole-passage questions (see TYPE E/F). Use this realistic mix of types:
+
+TYPE A — Grammar/usage (most common). No prompt needed. Tests punctuation (commas, semicolons, apostrophes, colons), subject-verb agreement, pronoun case/agreement, verb tense/form, modifiers, and sentence boundaries (fixing comma splices, run-ons, fragments). Set "prompt": "". First choice text is "NO CHANGE"; the other three are replacement texts. One choice may be "DELETE the underlined portion." when removing it is grammatical.
+
+TYPE B — Redundancy/conciseness. No prompt ("prompt": ""). The underlined span repeats an idea already stated. The correct answer is the most concise version — often "DELETE the underlined portion." or "OMIT the underlined portion." First choice "NO CHANGE". Include at least ONE of these.
+
+TYPE C — Rhetorical/strategy (tied to an underline). Write a real "prompt" using authentic ACT phrasing, e.g.: "Which choice most effectively introduces the main focus of the essay?", "Which choice best concludes the sentence/paragraph?", "Which choice most effectively maintains the essay's tone?", or "The writer wants to [specific goal]. Which choice best accomplishes that goal?". First choice "NO CHANGE"; others are replacement texts. Include 1-2 of these.
+
+TYPE D — Add/delete a sentence (tied to an underline). "prompt" like: "The writer is considering deleting the underlined portion. Should it be kept or deleted?". The four choices are full sentences beginning "Kept, because…", "Kept, because…", "Deleted, because…", "Deleted, because…". (Optional — include at most one.)
+
+TYPE E — Whole-essay purpose (REQUIRED, exactly one, listed LAST). Set "ref": 0 (NOT tied to an underline). "prompt": "Suppose the writer's primary purpose had been to [a specific purpose]. Would this essay accomplish that purpose?". The four choices begin "Yes, because…", "Yes, because…", "No, because…", "No, because…", with exactly one correct based on what the essay actually does.
+
+TYPE F — Whole-essay addition (OPTIONAL, ref: 0). "prompt": "The writer is considering adding the following sentence: '[sentence]'. Should the writer make this addition?". Choices begin "Yes, because…" / "No, because…".
+
+RULES FOR EVERY QUESTION:
+- "ref": for a question tied to an underline, match that underline's number. For a whole-passage question (TYPE E/F), use "ref": 0.
+- "choices": exactly 4 objects { "text": "...", "correct": true|false }. ACTUALLY SOLVE each one: mark exactly ONE choice "correct": true and verify it is genuinely best.
+- For underline questions, the first choice's text must be "NO CHANGE" (except TYPE D/E/F, which use the Kept/Deleted or Yes/No wording).
+- Spread the correct answer across positions — "NO CHANGE"/"Yes" should NOT always be correct.
 - "explanation": 2-4 sentences defending the correct choice and naming why the most tempting wrong choice fails. Refer to choices by their content, never by letter/position.
 - Plain text only: no markdown, no LaTeX.`;
 }
 
 // Validate and normalize a passage set. Returns
 // { title, segments:[{text, underline, ref}], questions:[{ref, prompt,
-// choices:[string], answerIndex, explanation}] } with questions sorted by ref.
+// choices:[string], answerIndex, explanation}] }.
+//
+// Questions are ordered like the real test: underline-tied ("span") questions
+// first, in the reading order of their underline, followed by whole-passage
+// ("standalone", ref 0) questions. Span questions and their underlines are
+// renumbered to a clean contiguous 1..K so the UI labels always line up;
+// standalone questions keep ref 0.
 export function validatePassageSet(text) {
   let parsed;
   try {
@@ -219,55 +238,73 @@ export function validatePassageSet(text) {
     segments.push({ text: s.text, underline, ref });
   }
 
+  // Underline numbers in reading order (the order they appear in the passage).
   const underlineRefs = segments.filter((s) => s.underline).map((s) => s.ref);
   const refSet = new Set(underlineRefs);
   if (refSet.size !== underlineRefs.length) {
     throw new Error("The passage had duplicate underline numbers. Try again.");
   }
-  if (refSet.size < 5) {
+  if (refSet.size < 4) {
     throw new Error("The passage didn't come back complete. Try again.");
   }
 
-  const rawQuestions = Array.isArray(parsed?.questions) ? parsed.questions : [];
-  const byRef = new Map();
-  for (const q of rawQuestions) {
-    if (!q || !Number.isInteger(q.ref) || !refSet.has(q.ref)) continue;
-    if (typeof q.explanation !== "string" || !q.explanation.trim()) continue;
-    if (!Array.isArray(q.choices) || q.choices.length !== 4) continue;
-
+  // A question is valid if it has 4 non-empty choices with exactly one correct
+  // and a non-empty explanation.
+  function normalize(q) {
+    if (!q) return null;
+    if (typeof q.explanation !== "string" || !q.explanation.trim()) return null;
+    if (!Array.isArray(q.choices) || q.choices.length !== 4) return null;
     const texts = q.choices.map((c) => c?.text);
-    if (!texts.every((t) => typeof t === "string" && t.trim())) continue;
-
+    if (!texts.every((t) => typeof t === "string" && t.trim())) return null;
     const correctIndexes = q.choices
       .map((c, i) => (c?.correct === true ? i : -1))
       .filter((i) => i !== -1);
-    if (correctIndexes.length !== 1) continue;
-
-    if (byRef.has(q.ref)) continue; // first valid question wins for a ref
-    byRef.set(q.ref, {
-      ref: q.ref,
+    if (correctIndexes.length !== 1) return null;
+    return {
       prompt: typeof q.prompt === "string" ? q.prompt.trim() : "",
       choices: texts,
       answerIndex: correctIndexes[0],
       explanation: q.explanation,
-    });
+    };
   }
 
-  // Keep only underlines that have a matching valid question, renumber both
-  // sides to a clean contiguous 1..N so the UI labels always line up.
-  const orderedRefs = underlineRefs.filter((r) => byRef.has(r)).sort((a, b) => a - b);
-  if (orderedRefs.length < 5) {
+  const rawQuestions = Array.isArray(parsed?.questions) ? parsed.questions : [];
+  const spanByRef = new Map(); // underline ref -> question
+  const standalone = []; // whole-passage questions (ref 0), in model order
+  for (const q of rawQuestions) {
+    const norm = normalize(q);
+    if (!norm) continue;
+    if (Number.isInteger(q.ref) && refSet.has(q.ref)) {
+      if (!spanByRef.has(q.ref)) spanByRef.set(q.ref, norm); // first wins per ref
+    } else if (norm.prompt) {
+      // Not tied to a (valid) underline — treat as a whole-passage question,
+      // but only if it actually has a prompt to stand on.
+      standalone.push(norm);
+    }
+  }
+
+  // Span questions in reading order, then standalone questions appended.
+  const orderedSpanRefs = underlineRefs.filter((r) => spanByRef.has(r));
+  const ordered = [
+    ...orderedSpanRefs.map((r) => ({ oldRef: r, q: spanByRef.get(r) })),
+    ...standalone.map((q) => ({ oldRef: 0, q })),
+  ];
+  if (ordered.length < 5) {
     throw new Error("Claude didn't return a complete passage set. Try again.");
   }
 
-  const renumber = new Map(orderedRefs.map((r, i) => [r, i + 1]));
+  // Assign display numbers 1..N and remember how each underline was renumbered.
+  const renumber = new Map(); // old underline ref -> new display number
+  const finalQuestions = ordered.map(({ oldRef, q }, i) => {
+    const number = i + 1;
+    if (oldRef > 0) renumber.set(oldRef, number);
+    return { ...q, ref: oldRef > 0 ? number : 0 };
+  });
+
+  // Keep only underlines that have a matching valid question; relabel them.
   const finalSegments = segments
     .filter((s) => !s.underline || renumber.has(s.ref))
     .map((s) => (s.underline ? { ...s, ref: renumber.get(s.ref) } : s));
-  const finalQuestions = orderedRefs.map((r) => ({
-    ...byRef.get(r),
-    ref: renumber.get(r),
-  }));
 
   return {
     title: typeof parsed?.title === "string" ? parsed.title.trim() : "",

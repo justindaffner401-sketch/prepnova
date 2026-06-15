@@ -244,27 +244,31 @@ const SAMPLE_PASSAGE = {
     },
     { text: "Therefore,", underline: true, ref: 3 },
     {
-      text: " I quickly learned that each bolt had its own thread size, and mixing them up could ruin a repair. The veteran volunteers ",
+      text: " I quickly learned that each bolt had its own thread size ",
       underline: false,
       ref: 0,
     },
-    { text: "was", underline: true, ref: 4 },
+    { text: "that was particular to that individual bolt", underline: true, ref: 4 },
+    {
+      text: ", and mixing them up could ruin a repair. The veteran volunteers ",
+      underline: false,
+      ref: 0,
+    },
+    { text: "was", underline: true, ref: 5 },
     { text: " patient with me, naming each tool as they handed it over. ", underline: false, ref: 0 },
-    { text: "Its", underline: true, ref: 5 },
+    { text: "Its", underline: true, ref: 6 },
     {
       text: " knowledge, gathered over decades, turned a wall of mysterious metal into something I could read.\n\nBy spring I could true a bent wheel myself, tightening each spoke until the rim spun ",
       underline: false,
       ref: 0,
     },
-    { text: "smooth and silent.", underline: true, ref: 6 },
-    { text: " The work was slow, but it taught me that patience ", underline: false, ref: 0 },
-    { text: "are", underline: true, ref: 7 },
-    { text: " a skill like any other.", underline: false, ref: 0 },
+    { text: "smooth and silent.", underline: true, ref: 7 },
+    { text: " The work was slow, but it taught me that patience is a skill like any other.", underline: false, ref: 0 },
   ],
   questions: [
     {
       ref: 1,
-      prompt: "Which choice best emphasizes how much longer the narrator stayed than originally planned?",
+      prompt: "Which choice most effectively emphasizes how much longer the narrator stayed than originally planned?",
       choices: [
         "NO CHANGE",
         "Eventually, I wandered back in.",
@@ -299,13 +303,26 @@ const SAMPLE_PASSAGE = {
     {
       ref: 4,
       prompt: "",
+      choices: [
+        "NO CHANGE",
+        "that was particular and specific to it",
+        "DELETE the underlined portion (and end with a comma).",
+        "belonging to that one bolt alone",
+      ],
+      answerIndex: 2,
+      explanation:
+        '"Its own thread size" already says the size is unique to that bolt, so the underlined clause only repeats the idea. Deleting it is the most concise fix; every other choice keeps restating the same point in different words.',
+    },
+    {
+      ref: 5,
+      prompt: "",
       choices: ["NO CHANGE", "were", "is", "has been"],
       answerIndex: 1,
       explanation:
         'The subject "volunteers" is plural, so it needs the plural verb "were." "Was," "is," and "has been" are all singular and clash with a subject naming more than one person.',
     },
     {
-      ref: 5,
+      ref: 6,
       prompt: "",
       choices: ["NO CHANGE", "There", "They're", "Their"],
       answerIndex: 3,
@@ -313,7 +330,7 @@ const SAMPLE_PASSAGE = {
         'The knowledge belongs to the volunteers — a plural antecedent — so the possessive "Their" is correct. "Its" is singular, "There" indicates a place, and "They\'re" is the contraction of "they are."',
     },
     {
-      ref: 6,
+      ref: 7,
       prompt: "",
       choices: [
         "NO CHANGE",
@@ -326,12 +343,18 @@ const SAMPLE_PASSAGE = {
         'The words describe how the rim "spun," and adverbs modify verbs, so "smoothly and silently" is correct. "Smooth and silent" are adjectives, the mixed "smooth and silently" is inconsistent, and "in a smooth and silent way" is wordy padding.',
     },
     {
-      ref: 7,
-      prompt: "",
-      choices: ["NO CHANGE", "is", "were", "have been"],
-      answerIndex: 1,
+      ref: 0,
+      prompt:
+        "Suppose the writer's primary purpose had been to explain the step-by-step process of repairing a bicycle. Would this essay accomplish that purpose?",
+      choices: [
+        "Yes, because it lists the exact tools a beginner needs to true a wheel.",
+        "Yes, because it walks through how to sort bolts by their thread size.",
+        "No, because it is a personal account of what the narrator gained from volunteering, not a how-to guide.",
+        "No, because it never mentions bicycles or repairs anywhere in the essay.",
+      ],
+      answerIndex: 2,
       explanation:
-        'The subject "patience" is singular, so it takes the singular verb "is." "Are," "were," and "have been" are all plural forms that don\'t agree with a single, uncountable quality.',
+        "The essay is a first-person reflection on two years at the co-op and what the work taught the narrator; it touches on repairs only in passing, so it would not serve as a step-by-step guide. The choice claiming it never mentions bicycles is simply false.",
     },
   ],
 };

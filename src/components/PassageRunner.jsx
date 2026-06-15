@@ -9,7 +9,12 @@ import {
   XIcon,
 } from "./icons.jsx";
 
-const LETTERS = ["A", "B", "C", "D"];
+// The ACT alternates answer letters: odd-numbered questions use A-D, even use
+// F-J. Pick the set by the question's display number (1-based).
+const LETTERS_ODD = ["A", "B", "C", "D"];
+const LETTERS_EVEN = ["F", "G", "H", "J"];
+const lettersFor = (displayNumber) =>
+  displayNumber % 2 === 1 ? LETTERS_ODD : LETTERS_EVEN;
 
 function formatElapsed(seconds) {
   const m = Math.floor(seconds / 60);
@@ -57,7 +62,9 @@ export default function PassageRunner({ passage, test, subject, source, onExit, 
   const revealed = answered !== null;
   const answeredCount = answers.filter((a) => a !== null).length;
   const score = answers.filter((a) => a?.correct).length;
-  const activeRef = question.ref;
+  const activeRef = question.ref; // 0 for whole-passage questions
+  const isStandalone = activeRef === 0;
+  const letters = lettersFor(current + 1);
 
   function selectChoice(i) {
     if (revealed) return;
@@ -184,9 +191,15 @@ export default function PassageRunner({ passage, test, subject, source, onExit, 
             <p className="text-xs font-semibold tracking-widest text-slate-500 uppercase">
               Question {current + 1} of {total}
             </p>
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-electric-500/15 font-display text-xs font-bold text-electric-300">
-              {question.ref}
-            </span>
+            {isStandalone ? (
+              <span className="flex items-center gap-1.5 rounded-lg bg-cyan-500/15 px-2.5 py-1 font-display text-xs font-bold text-cyan-300">
+                <BookOpen className="h-3.5 w-3.5" /> Whole passage
+              </span>
+            ) : (
+              <span className="grid h-7 w-7 place-items-center rounded-lg bg-electric-500/15 font-display text-xs font-bold text-electric-300">
+                {question.ref}
+              </span>
+            )}
           </div>
 
           {question.prompt ? (
@@ -229,7 +242,7 @@ export default function PassageRunner({ passage, test, subject, source, onExit, 
                           : "bg-white/10 text-slate-300"
                     }`}
                   >
-                    {LETTERS[i]}
+                    {letters[i]}
                   </span>
                   <span className="text-slate-200">{choice}</span>
                   {revealed && isCorrect && (
