@@ -377,6 +377,7 @@ export function getSamplePassage() {
 // works without an API key. Answers verified against the passage; correct
 // choices are spread across positions.
 const SAMPLE_READING = {
+  format: "single",
   title: "The Color-Changing Skin of the Octopus",
   genre: "Natural Science",
   paragraphs: [
@@ -490,13 +491,249 @@ const SAMPLE_READING = {
   ],
 };
 
+// Paired A/B sample (Social Science).
+const SAMPLE_READING_PAIRED = {
+  format: "paired",
+  title: "The Fate of the Third Place",
+  genre: "Social Science",
+  passageA: {
+    label: "Passage A is adapted from an essay by an urban planner.",
+    paragraphs: [
+      "Between home and work lies a third kind of space: the cafe, the public library, the corner barbershop. The sociologist Ray Oldenburg called these \"third places,\" and argued that they are where community is quietly built. Unlike the privacy of home or the hierarchy of work, a true third place welcomes anyone who walks in, sets rank aside, and runs on nothing more than conversation.",
+      "Cities that invest in such places reap the rewards. A well-placed library or shaded plaza gives strangers a reason to linger, and lingering, repeated over months, turns strangers into familiar faces and familiar faces into neighbors. When a city lets these spaces vanish, it does not merely lose buildings; it loses the easy, unplanned contact that makes a scattered population feel like a single public.",
+    ],
+  },
+  passageB: {
+    label: "Passage B is adapted from a recent article by a sociologist.",
+    paragraphs: [
+      "The third place is not so much disappearing as migrating. Today's gathering spots are as likely to be found online as on any street corner. A teenager may feel a stronger sense of belonging in a gaming community than in any neighborhood cafe, and that community asks nothing of geography; its members may never share a single zip code.",
+      "Critics mourn the empty plaza, but they may be measuring the wrong thing. Belonging has loosened its old tie to physical place. Whether that shift genuinely weakens community or simply relocates it remains, for now, an open question—though the nostalgic view tends to answer it before it has honestly been asked.",
+    ],
+  },
+  questions: [
+    {
+      scope: "A",
+      prompt: "According to Passage A, a true third place differs from a workplace mainly in that it:",
+      choices: [
+        "charges no money to enter",
+        "sets rank aside and welcomes anyone who comes in",
+        "is owned by the city rather than a company",
+        "stays open later in the evening",
+      ],
+      answerIndex: 1,
+      explanation:
+        "Passage A says a third place, unlike the hierarchy of work, \"sets rank aside\" and \"welcomes anyone who walks in.\" Cost, ownership, and hours are never given as the defining contrast.",
+    },
+    {
+      scope: "A",
+      prompt: "In Passage A, the author values \"lingering\" primarily because it:",
+      choices: [
+        "gives businesses more time to make sales",
+        "allows people to avoid going home",
+        "turns repeated casual contact into neighborly familiarity",
+        "keeps public plazas from sitting empty",
+      ],
+      answerIndex: 2,
+      explanation:
+        "Passage A states that lingering \"repeated over months, turns strangers into familiar faces and familiar faces into neighbors.\" The other options are not the reason the author gives.",
+    },
+    {
+      scope: "B",
+      prompt: "According to Passage B, today's gathering places are increasingly:",
+      choices: [
+        "found online rather than in physical locations",
+        "limited to wealthy neighborhoods",
+        "run by city governments",
+        "shared by people who live on the same block",
+      ],
+      answerIndex: 0,
+      explanation:
+        "Passage B says modern gathering spots are \"as likely to be found online as on any street corner\" and that such communities ask \"nothing of geography.\" The other choices contradict the passage.",
+    },
+    {
+      scope: "B",
+      prompt: "The author of Passage B implies that critics who \"mourn the empty plaza\":",
+      choices: [
+        "have proven that online community is harmful",
+        "may be judging the change before honestly examining it",
+        "want cities to build more libraries",
+        "prefer gaming communities to cafes",
+      ],
+      answerIndex: 1,
+      explanation:
+        "Passage B says the nostalgic view \"tends to answer it before it has honestly been asked\" and that critics \"may be measuring the wrong thing\"—a charge of premature judgment, not proof of harm.",
+    },
+    {
+      scope: "both",
+      prompt: "Compared to Passage A, Passage B is more:",
+      choices: [
+        "nostalgic about neighborhood life",
+        "concerned with city budgets",
+        "skeptical that community depends on physical place",
+        "pessimistic about new technology",
+      ],
+      answerIndex: 2,
+      explanation:
+        "Passage A ties community to physical third places; Passage B argues belonging \"has loosened its old tie to physical place.\" That doubt about place—not nostalgia, budgets, or technophobia—is the key difference.",
+    },
+    {
+      scope: "both",
+      prompt: "The author of Passage A would most likely respond to Passage B by arguing that:",
+      choices: [
+        "online communities are simply a passing fad",
+        "geography is the only thing that matters to belonging",
+        "online belonging cannot supply the unplanned in-person contact that builds a public",
+        "teenagers should spend less time playing games",
+      ],
+      answerIndex: 2,
+      explanation:
+        "Passage A's central claim is that the \"easy, unplanned contact\" of shared physical space makes a population a public—something the author would argue an online community can't fully replace. The other options overstate or stray from that view.",
+    },
+    {
+      scope: "both",
+      prompt: "Both passages are primarily concerned with:",
+      choices: [
+        "how and where a sense of community forms",
+        "the financial cost of public spaces",
+        "the history of the public library",
+        "the design of modern video games",
+      ],
+      answerIndex: 0,
+      explanation:
+        "Both passages examine where belonging and community come from—Passage A locating it in physical third places, Passage B in increasingly online ones. Cost, libraries, and game design are at most incidental details.",
+    },
+  ],
+};
+
+// Graph/figure sample (Social Science).
+const SAMPLE_READING_GRAPH = {
+  format: "graph",
+  title: "Bringing Back the Bus",
+  genre: "Social Science",
+  paragraphs: [
+    "For years, the bus system in the mid-sized city of Marin Falls had been losing riders. Routes wandered across the map in search of every neighborhood, and as a result buses on any given line came rarely—often just once an hour. In 2018, the transit agency tried something that sounded almost backward: it cut the number of routes.",
+    "The redesign concentrated service on a handful of main corridors, where buses now arrived every ten minutes from morning to night. Quieter suburban routes were trimmed or dropped. Crucially, the agency did this without spending more money; it simply moved resources from lightly used routes to busy ones.",
+    "In the years that followed, ridership climbed. But the gains were not evenly shared. On the frequent main lines, trips rose sharply; on the remaining infrequent routes, ridership barely moved. Riders, it seemed, were drawn less by how many places a bus could reach than by how seldom they had to wait for one.",
+    "The lesson Marin Falls drew was blunt: when it comes to winning riders, frequency beats coverage. A bus that comes every ten minutes is a tool people can build a day around; a bus that comes once an hour is a gamble most will avoid.",
+  ],
+  figure: {
+    caption: "Figure 1: Annual bus ridership in Marin Falls (millions of trips)",
+    type: "line",
+    xLabel: "Year",
+    yLabel: "Trips (millions)",
+    series: [
+      {
+        name: "Frequent main lines",
+        points: [
+          { x: "2017", y: 8 },
+          { x: "2018", y: 9 },
+          { x: "2019", y: 11 },
+          { x: "2020", y: 12 },
+          { x: "2021", y: 13 },
+        ],
+      },
+      {
+        name: "Infrequent routes",
+        points: [
+          { x: "2017", y: 5 },
+          { x: "2018", y: 5 },
+          { x: "2019", y: 5 },
+          { x: "2020", y: 5 },
+          { x: "2021", y: 5 },
+        ],
+      },
+    ],
+  },
+  questions: [
+    {
+      prompt: "The main purpose of the passage is to:",
+      choices: [
+        "describe how cutting routes but raising frequency increased bus ridership",
+        "argue that the city should have spent more on its bus system",
+        "explain how to read a transit ridership graph",
+        "compare buses with other forms of public transportation",
+      ],
+      answerIndex: 0,
+      explanation:
+        "The passage recounts Marin Falls's 2018 redesign—fewer routes, far more frequent main lines—and the ridership gains that followed. It does not call for more spending, teach graph-reading, or compare buses to other modes.",
+    },
+    {
+      prompt: "According to the passage, the city carried out its 2018 redesign by:",
+      choices: [
+        "raising fares to fund new buses",
+        "moving resources from lightly used routes to busy ones, without spending more",
+        "adding service to every suburban neighborhood",
+        "borrowing money to expand the fleet",
+      ],
+      answerIndex: 1,
+      explanation:
+        "The second paragraph says the agency made the change \"without spending more money; it simply moved resources from lightly used routes to busy ones.\" Fares, universal suburban service, and borrowing are not mentioned.",
+    },
+    {
+      prompt: "According to Figure 1, ridership on the frequent main lines in 2021 was about:",
+      choices: ["8 million trips", "11 million trips", "13 million trips", "5 million trips"],
+      answerIndex: 2,
+      explanation:
+        "The figure shows the frequent main lines reaching 13 million trips in 2021. Eight million was the 2017 value, 11 million was 2019, and 5 million is the infrequent routes.",
+    },
+    {
+      prompt: "Based on Figure 1, ridership on the infrequent routes between 2017 and 2021:",
+      choices: [
+        "rose steadily each year",
+        "stayed essentially flat",
+        "fell to nearly zero",
+        "rose and then dropped",
+      ],
+      answerIndex: 1,
+      explanation:
+        "The infrequent-routes line holds at about 5 million trips every year in the figure—essentially flat, in contrast to the climbing main-line ridership.",
+    },
+    {
+      prompt: "The figure most strongly supports the passage's claim that:",
+      choices: [
+        "total ridership fell after the redesign",
+        "frequency, not coverage, drove the gains in ridership",
+        "suburban routes gained the most new riders",
+        "the redesign made no measurable difference",
+      ],
+      answerIndex: 1,
+      explanation:
+        "The frequent lines climb while the infrequent routes stay flat, matching the passage's point that riders were drawn by frequent service rather than wide coverage. The other options contradict the data.",
+    },
+    {
+      prompt: "It can reasonably be inferred that a different city hoping to raise bus ridership should:",
+      choices: [
+        "add as many routes as possible",
+        "focus on running frequent service on its busiest corridors",
+        "reduce service across the entire system",
+        "raise fares to discourage crowding",
+      ],
+      answerIndex: 1,
+      explanation:
+        "Marin Falls's results suggest concentrating frequent service on main corridors wins riders. Maximizing routes is the strategy the passage says failed; cutting all service or raising fares would not raise ridership.",
+    },
+    {
+      prompt: 'As it is used in the final paragraph, the word "coverage" most nearly means:',
+      choices: [
+        "the cost of a bus ticket",
+        "protection against accidents",
+        "the number of places the routes reach",
+        "news reports about the buses",
+      ],
+      answerIndex: 2,
+      explanation:
+        'The passage contrasts "frequency" with "coverage"—how many places a bus can reach. The insurance, ticket-price, and news senses of "coverage" do not fit that contrast.',
+    },
+  ],
+};
+
+const SAMPLE_READINGS = [SAMPLE_READING, SAMPLE_READING_PAIRED, SAMPLE_READING_GRAPH];
+
+// Returns a deep copy of a randomly chosen sample (single, paired, or graph) so
+// the free sample set shows all three Reading formats.
 export function getSampleReading() {
-  return {
-    title: SAMPLE_READING.title,
-    genre: SAMPLE_READING.genre,
-    paragraphs: [...SAMPLE_READING.paragraphs],
-    questions: SAMPLE_READING.questions.map((q) => ({ ...q, choices: [...q.choices] })),
-  };
+  const pick = SAMPLE_READINGS[Math.floor(Math.random() * SAMPLE_READINGS.length)];
+  return JSON.parse(JSON.stringify(pick));
 }
 
 function shuffle(array) {

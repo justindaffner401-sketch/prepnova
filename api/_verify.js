@@ -11,7 +11,7 @@
 // lives only in the serverless environment (set it in Vercel → Project →
 // Settings → Environment Variables); it is never sent to the browser.
 
-import { renumberPassage } from "../src/lib/questionSpec.js";
+import { readingContextText, renumberPassage } from "../src/lib/questionSpec.js";
 
 const VERIFY_MODEL = process.env.OPENAI_VERIFY_MODEL || "gpt-4o-mini";
 const VERIFY_TIMEOUT_MS = 30_000;
@@ -170,9 +170,9 @@ ${JSON.stringify(items)}`;
 export async function verifyReading(reading) {
   if (!verifierEnabled() || reading.questions.length === 0) return { verified: false, reading };
 
-  const ctx = reading.paragraphs.map((p, i) => `[${i + 1}] ${p}`).join("\n\n");
+  const ctx = readingContextText(reading);
   const items = reading.questions.map((q, i) => ({ id: i, question: q.prompt, choices: q.choices }));
-  const user = `Below is an ACT Reading passage (paragraphs are numbered [1], [2], …). Answer each comprehension question using ONLY the passage.
+  const user = `Below is ACT Reading material (a passage, a paired set, or a passage with a figure). Answer each comprehension question using ONLY this material.
 
 Return ONLY JSON shaped exactly like {"answers":[{"id":0,"choice":2}]} — one entry per id, where "choice" is the 0-based index of the single best answer.
 

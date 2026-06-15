@@ -1,5 +1,24 @@
 import { useEffect, useState } from "react";
 import { BookOpen, Check, ChevronRight, Clock, Sparkles, XIcon } from "./icons.jsx";
+import ChartFigure from "./ChartFigure.jsx";
+
+const SCOPE_LABEL = { A: "Passage A", B: "Passage B", both: "Both passages" };
+
+// A passage rendered as numbered paragraphs.
+function NumberedParagraphs({ paragraphs }) {
+  return (
+    <div className="space-y-4">
+      {paragraphs.map((para, i) => (
+        <p key={i} className="flex gap-3 leading-relaxed text-slate-200">
+          <span className="mt-0.5 shrink-0 font-display text-xs font-bold text-slate-500">
+            {i + 1}
+          </span>
+          <span>{para}</span>
+        </p>
+      ))}
+    </div>
+  );
+}
 
 // ACT alternates answer letters: odd questions A-D, even F-J.
 const LETTERS_ODD = ["A", "B", "C", "D"];
@@ -27,7 +46,7 @@ function formatElapsed(seconds) {
  *  - onComplete({ score, total }): finish and record the result
  */
 export default function ReadingRunner({ reading, test, source, verified, onExit, onComplete }) {
-  const { title, genre, paragraphs, questions } = reading;
+  const { format, title, genre, paragraphs, questions, passageA, passageB, figure } = reading;
   const total = questions.length;
 
   const [answers, setAnswers] = useState(() => Array(total).fill(null));
@@ -136,24 +155,49 @@ export default function ReadingRunner({ reading, test, source, verified, onExit,
               <BookOpen className="h-3.5 w-3.5" />
               {title || "Reading Passage"}
             </p>
-            <div className="mt-4 space-y-4">
-              {paragraphs.map((para, i) => (
-                <p key={i} className="flex gap-3 leading-relaxed text-slate-200">
-                  <span className="mt-0.5 shrink-0 font-display text-xs font-bold text-slate-500">
-                    {i + 1}
-                  </span>
-                  <span>{para}</span>
-                </p>
-              ))}
-            </div>
+
+            {format === "paired" ? (
+              <div className="mt-4 space-y-5">
+                <div>
+                  <p className="mb-2 font-display text-sm font-bold text-white">Passage A</p>
+                  {passageA.label && (
+                    <p className="mb-2 text-xs italic text-slate-400">{passageA.label}</p>
+                  )}
+                  <NumberedParagraphs paragraphs={passageA.paragraphs} />
+                </div>
+                <div className="border-t border-white/10 pt-5">
+                  <p className="mb-2 font-display text-sm font-bold text-white">Passage B</p>
+                  {passageB.label && (
+                    <p className="mb-2 text-xs italic text-slate-400">{passageB.label}</p>
+                  )}
+                  <NumberedParagraphs paragraphs={passageB.paragraphs} />
+                </div>
+              </div>
+            ) : format === "graph" ? (
+              <div className="mt-4 space-y-4">
+                <NumberedParagraphs paragraphs={paragraphs} />
+                <ChartFigure figure={figure} />
+              </div>
+            ) : (
+              <div className="mt-4">
+                <NumberedParagraphs paragraphs={paragraphs} />
+              </div>
+            )}
           </div>
         </div>
 
         {/* ---------------- Question panel ---------------- */}
         <div className="glass p-6 sm:p-7">
-          <p className="text-xs font-semibold tracking-widest text-slate-500 uppercase">
-            Question {current + 1} of {total}
-          </p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold tracking-widest text-slate-500 uppercase">
+              Question {current + 1} of {total}
+            </p>
+            {question.scope && (
+              <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2.5 py-1 text-xs font-semibold text-cyan-300">
+                {SCOPE_LABEL[question.scope] ?? "Both passages"}
+              </span>
+            )}
+          </div>
           <p className="mt-3 leading-relaxed font-medium text-white sm:text-lg">
             {question.prompt}
           </p>

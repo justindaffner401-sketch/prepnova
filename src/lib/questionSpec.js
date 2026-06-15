@@ -468,9 +468,334 @@ export function validateReadingSet(text) {
 
   const genre = READING_GENRES.includes(parsed?.genre) ? parsed.genre : "Reading";
   return {
+    format: "single",
     title: typeof parsed?.title === "string" ? parsed.title.trim() : "",
     genre,
     paragraphs,
     questions: cleaned.slice(0, 12),
   };
+}
+
+// Shared helper to normalize a reading question { prompt, choices, explanation }
+// (+ optional scope for paired passages). Returns null if invalid.
+function normalizeReadingQuestion(q, withScope) {
+  if (!q || typeof q.prompt !== "string" || !q.prompt.trim()) return null;
+  if (typeof q.explanation !== "string" || !q.explanation.trim()) return null;
+  if (!Array.isArray(q.choices) || q.choices.length !== 4) return null;
+  const texts = q.choices.map((c) => c?.text);
+  if (!texts.every((t) => typeof t === "string" && t.trim())) return null;
+  const correctIndexes = q.choices
+    .map((c, i) => (c?.correct === true ? i : -1))
+    .filter((i) => i !== -1);
+  if (correctIndexes.length !== 1) return null;
+  const out = {
+    prompt: q.prompt.trim(),
+    choices: texts,
+    answerIndex: correctIndexes[0],
+    explanation: q.explanation,
+  };
+  if (withScope) {
+    out.scope = ["A", "B", "both"].includes(q.scope) ? q.scope : "both";
+  }
+  return out;
+}
+
+/* ---------------- Paired A/B Reading ---------------- */
+
+export const READING_PAIRED_SCHEMA = {
+  type: "object",
+  properties: {
+    title: { type: "string" },
+    genre: { type: "string" },
+    passageA: {
+      type: "object",
+      properties: {
+        label: { type: "string" },
+        paragraphs: { type: "array", items: { type: "string" } },
+      },
+      required: ["label", "paragraphs"],
+      additionalProperties: false,
+    },
+    passageB: {
+      type: "object",
+      properties: {
+        label: { type: "string" },
+        paragraphs: { type: "array", items: { type: "string" } },
+      },
+      required: ["label", "paragraphs"],
+      additionalProperties: false,
+    },
+    questions: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          scope: { type: "string" },
+          prompt: { type: "string" },
+          choices: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: { text: { type: "string" }, correct: { type: "boolean" } },
+              required: ["text", "correct"],
+              additionalProperties: false,
+            },
+          },
+          explanation: { type: "string" },
+        },
+        required: ["scope", "prompt", "choices", "explanation"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["title", "genre", "passageA", "passageB", "questions"],
+  additionalProperties: false,
+};
+
+export function buildReadingPairedPrompt(test, subject) {
+  if (test !== "ACT" || subject !== "Reading") {
+    throw new Error(`Reading mode is not configured for ${test} ${subject}.`);
+  }
+  return `Write a PAIRED ACT Reading passage set — TWO short passages (Passage A and Passage B) on a shared topic, with comprehension questions about each and about both. This mirrors the real ACT Reading paired passage.
+
+Output a JSON object with "title", "genre", "passageA", "passageB", and "questions".
+
+- "genre": one of "Literary Narrative", "Social Science", "Humanities", "Natural Science" (both passages share it).
+- "passageA" and "passageB": each { "label": "...", "paragraphs": [ ... ] }. The label is a brief source line (e.g., "Passage A is adapted from an essay by a marine biologist."). Each passage is 150-230 words in 2-3 paragraphs. The two should address the SAME subject from different angles, sources, or opinions so they can be compared.
+
+QUESTIONS (write 8). Each has a "scope": "A" (about Passage A only), "B" (about Passage B only), or "both" (comparing the two). Include roughly 3 about A, 3 about B, and 2 about both.
+- Use authentic ACT stems: "According to Passage A, ...", "It can reasonably be inferred from Passage B that ...", "As it is used in Passage A, the word \"X\" most nearly means:", and for "both": "Compared to Passage A, Passage B ...", "Both passages ...", or "The author of Passage A would most likely regard [an idea in Passage B] as ...".
+- "choices": exactly 4 objects { "text": "...", "correct": true|false }; mark exactly ONE correct and verify it against the relevant passage(s). Wrong choices must be clearly unsupported. Spread correct answers across positions.
+- "explanation": 2-4 sentences pointing to the text that justifies the answer. Refer to choices by content, never by letter/position.
+- Plain text only.`;
+}
+
+export function validatePairedReading(text) {
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error("Claude returned something unreadable. Try generating again.");
+  }
+  const readPassage = (p) => {
+    const paragraphs = (Array.isArray(p?.paragraphs) ? p.paragraphs : [])
+      .filter((s) => typeof s === "string" && s.trim())
+      .map((s) => s.trim());
+    return { label: typeof p?.label === "string" ? p.label.trim() : "", paragraphs };
+  };
+  const passageA = readPassage(parsed?.passageA);
+  const passageB = readPassage(parsed?.passageB);
+  if (passageA.paragraphs.length < 1 || passageB.paragraphs.length < 1) {
+    throw new Error("The passages didn't come back complete. Try again.");
+  }
+  const cleaned = [];
+  for (const q of Array.isArray(parsed?.questions) ? parsed.questions : []) {
+    const norm = normalizeReadingQuestion(q, true);
+    if (norm) cleaned.push(norm);
+  }
+  if (cleaned.length < 5) {
+    throw new Error("Claude didn't return a complete set of questions. Try again.");
+  }
+  const genre = READING_GENRES.includes(parsed?.genre) ? parsed.genre : "Reading";
+  return {
+    format: "paired",
+    title: typeof parsed?.title === "string" ? parsed.title.trim() : "",
+    genre,
+    passageA,
+    passageB,
+    questions: cleaned.slice(0, 12),
+  };
+}
+
+/* ---------------- Graph/figure Reading ---------------- */
+
+export const READING_GRAPH_SCHEMA = {
+  type: "object",
+  properties: {
+    title: { type: "string" },
+    genre: { type: "string" },
+    paragraphs: { type: "array", items: { type: "string" } },
+    figure: {
+      type: "object",
+      properties: {
+        caption: { type: "string" },
+        type: { type: "string" },
+        xLabel: { type: "string" },
+        yLabel: { type: "string" },
+        series: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              points: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: { x: { type: "string" }, y: { type: "number" } },
+                  required: ["x", "y"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["name", "points"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["caption", "type", "xLabel", "yLabel", "series"],
+      additionalProperties: false,
+    },
+    questions: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          prompt: { type: "string" },
+          choices: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: { text: { type: "string" }, correct: { type: "boolean" } },
+              required: ["text", "correct"],
+              additionalProperties: false,
+            },
+          },
+          explanation: { type: "string" },
+        },
+        required: ["prompt", "choices", "explanation"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["title", "genre", "paragraphs", "figure", "questions"],
+  additionalProperties: false,
+};
+
+export function buildReadingGraphPrompt(test, subject) {
+  if (test !== "ACT" || subject !== "Reading") {
+    throw new Error(`Reading mode is not configured for ${test} ${subject}.`);
+  }
+  return `Write an ACT Reading passage ACCOMPANIED BY A GRAPH, like the real ACT Reading passage that includes a visual. Some questions are about the passage and some about the graph.
+
+Output a JSON object with "title", "genre", "paragraphs", "figure", and "questions".
+
+- "genre": "Social Science" or "Natural Science" (these fit data-driven passages best).
+- "paragraphs": an array of 4-6 paragraph strings (a 400-600 word passage) that discusses a topic involving measurable data.
+- "figure": a simple graph the passage refers to:
+  - "caption": e.g., "Figure 1: Average monthly rainfall in Region X".
+  - "type": "bar" or "line".
+  - "xLabel", "yLabel": axis labels.
+  - "series": 1-2 data series. Each { "name": "...", "points": [ { "x": "category or label", "y": number } ] } with 4-7 points. Keep numbers clean and realistic; the data MUST be consistent with what the passage says.
+
+QUESTIONS (write 8): most about the passage, plus 2-3 about the figure.
+- Passage questions use normal ACT stems (main idea, inference, detail, vocabulary, function, tone).
+- Figure questions use stems like "According to Figure 1, ...", "Based on the figure, which statement is best supported?", or "The figure most strongly supports the passage's claim that ...". These MUST be answerable from the figure data.
+- "choices": exactly 4 objects { "text": "...", "correct": true|false }; mark exactly ONE correct and verify it (against the passage or the figure data). Wrong choices clearly unsupported. Spread correct answers across positions.
+- "explanation": 2-4 sentences citing the passage or the specific figure data. Refer to choices by content, never by letter/position.
+- Plain text only.`;
+}
+
+export function validateGraphReading(text) {
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error("Claude returned something unreadable. Try generating again.");
+  }
+  const paragraphs = (Array.isArray(parsed?.paragraphs) ? parsed.paragraphs : [])
+    .filter((p) => typeof p === "string" && p.trim())
+    .map((p) => p.trim());
+  if (paragraphs.length < 3) {
+    throw new Error("The passage didn't come back complete. Try again.");
+  }
+
+  const f = parsed?.figure || {};
+  const type = f.type === "line" ? "line" : "bar";
+  const series = (Array.isArray(f.series) ? f.series : [])
+    .map((s) => ({
+      name: typeof s?.name === "string" ? s.name : "",
+      points: (Array.isArray(s?.points) ? s.points : [])
+        .filter((p) => typeof p?.x === "string" && Number.isFinite(p?.y))
+        .map((p) => ({ x: p.x, y: p.y })),
+    }))
+    .filter((s) => s.points.length >= 2)
+    .slice(0, 2);
+  if (series.length === 0) {
+    throw new Error("The figure didn't come back complete. Try again.");
+  }
+  const figure = {
+    caption: typeof f.caption === "string" ? f.caption.trim() : "Figure 1",
+    type,
+    xLabel: typeof f.xLabel === "string" ? f.xLabel.trim() : "",
+    yLabel: typeof f.yLabel === "string" ? f.yLabel.trim() : "",
+    series,
+  };
+
+  const cleaned = [];
+  for (const q of Array.isArray(parsed?.questions) ? parsed.questions : []) {
+    const norm = normalizeReadingQuestion(q, false);
+    if (norm) cleaned.push(norm);
+  }
+  if (cleaned.length < 5) {
+    throw new Error("Claude didn't return a complete set of questions. Try again.");
+  }
+  const genre = READING_GENRES.includes(parsed?.genre) ? parsed.genre : "Reading";
+  return {
+    format: "graph",
+    title: typeof parsed?.title === "string" ? parsed.title.trim() : "",
+    genre,
+    paragraphs,
+    figure,
+    questions: cleaned.slice(0, 12),
+  };
+}
+
+/* ---------------- Reading variant selection + verification context ---------------- */
+
+export const READING_VARIANTS = ["single", "paired", "graph"];
+
+// Randomly choose which Reading passage type to generate, roughly matching the
+// real test's mix (more single passages than special variants).
+export function chooseReadingVariant() {
+  const r = Math.random();
+  if (r < 0.4) return "single";
+  if (r < 0.7) return "paired";
+  return "graph";
+}
+
+export function readingPromptFor(variant, test, subject) {
+  if (variant === "paired") return buildReadingPairedPrompt(test, subject);
+  if (variant === "graph") return buildReadingGraphPrompt(test, subject);
+  return buildReadingPrompt(test, subject);
+}
+
+export function readingSchemaFor(variant) {
+  if (variant === "paired") return READING_PAIRED_SCHEMA;
+  if (variant === "graph") return READING_GRAPH_SCHEMA;
+  return READING_SCHEMA;
+}
+
+export function validateReadingFor(variant, text) {
+  if (variant === "paired") return validatePairedReading(text);
+  if (variant === "graph") return validateGraphReading(text);
+  return validateReadingSet(text);
+}
+
+// Plain-text context for the verifier, covering whichever Reading format.
+export function readingContextText(set) {
+  if (set.format === "paired") {
+    const a = set.passageA.paragraphs.map((p, i) => `[A${i + 1}] ${p}`).join("\n\n");
+    const b = set.passageB.paragraphs.map((p, i) => `[B${i + 1}] ${p}`).join("\n\n");
+    return `Passage A — ${set.passageA.label}\n${a}\n\nPassage B — ${set.passageB.label}\n${b}`;
+  }
+  const paras = set.paragraphs.map((p, i) => `[${i + 1}] ${p}`).join("\n\n");
+  if (set.format === "graph") {
+    const fig = set.figure;
+    const data = fig.series
+      .map((s) => `${s.name}: ${s.points.map((p) => `${p.x}=${p.y}`).join(", ")}`)
+      .join("; ");
+    return `${paras}\n\n${fig.caption} (${fig.type} chart; x=${fig.xLabel}, y=${fig.yLabel}). Data — ${data}`;
+  }
+  return paras;
 }

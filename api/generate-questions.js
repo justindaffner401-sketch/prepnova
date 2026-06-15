@@ -8,18 +8,19 @@ import {
   MODEL,
   PASSAGE_SCHEMA,
   QUESTIONS_SCHEMA,
-  READING_SCHEMA,
   SYSTEM_PROMPT,
   VALID_SUBJECTS,
   VALID_TESTS,
   buildPassagePrompt,
   buildPrompt,
-  buildReadingPrompt,
+  chooseReadingVariant,
   isPassageMode,
   isReadingMode,
+  readingPromptFor,
+  readingSchemaFor,
   validatePassageSet,
   validateQuestions,
-  validateReadingSet,
+  validateReadingFor,
 } from "../src/lib/questionSpec.js";
 import { isEntitled } from "../src/lib/entitlement.js";
 import { verifierEnabled, verifyMcq, verifyPassage, verifyReading } from "./_verify.js";
@@ -123,12 +124,18 @@ export default async function handler(req, res) {
   // occasional disputed question still leaves a full set of 5.
   const mcqCount = verifierEnabled() ? 8 : 5;
 
+  // Reading randomly picks a passage variant (single / paired / graph).
+  const readingVariant = reading ? chooseReadingVariant() : null;
   const content = reading
-    ? buildReadingPrompt(test, subject)
+    ? readingPromptFor(readingVariant, test, subject)
     : passage
       ? buildPassagePrompt(test, subject)
       : buildPrompt(test, subject, mcqCount);
-  const schema = reading ? READING_SCHEMA : passage ? PASSAGE_SCHEMA : QUESTIONS_SCHEMA;
+  const schema = reading
+    ? readingSchemaFor(readingVariant)
+    : passage
+      ? PASSAGE_SCHEMA
+      : QUESTIONS_SCHEMA;
 
   // The 90s timeout bounds each attempt well inside Vercel's function limit;
   // 8000 tokens covers an over-generated MCQ set or a full passage.
@@ -152,7 +159,9 @@ export default async function handler(req, res) {
 
     const text = response.content.find((block) => block.type === "text")?.text ?? "";
     if (reading) {
-      const { verified, reading: set } = await verifyReading(validateReadingSet(text));
+      const { verified, reading: set } = await verifyReading(
+        validateReadingFor(readingVariant, text),
+      );
       return res.status(200).json({ reading: set, verified });
     }
     if (passage) {

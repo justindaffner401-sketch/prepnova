@@ -3,14 +3,15 @@ import {
   MODEL,
   PASSAGE_SCHEMA,
   QUESTIONS_SCHEMA,
-  READING_SCHEMA,
   SYSTEM_PROMPT,
   buildPassagePrompt,
   buildPrompt,
-  buildReadingPrompt,
+  chooseReadingVariant,
+  readingPromptFor,
+  readingSchemaFor,
   validatePassageSet,
   validateQuestions,
-  validateReadingSet,
+  validateReadingFor,
 } from "./questionSpec.js";
 import { supabase } from "./supabase.js";
 
@@ -133,13 +134,21 @@ async function generateDirect({ test, subject, apiKey, signal, mode }) {
     timeout: 90_000,
   });
 
-  const promptFor = {
-    passage: () => buildPassagePrompt(test, subject),
-    reading: () => buildReadingPrompt(test, subject),
-    mcq: () => buildPrompt(test, subject),
-  };
-  const schemaFor = { passage: PASSAGE_SCHEMA, reading: READING_SCHEMA, mcq: QUESTIONS_SCHEMA };
-  const key = promptFor[mode] ? mode : "mcq";
+  // For Reading, pick which passage variant to generate (single / paired /
+  // graph) and use it consistently for the prompt, schema, and validator.
+  const variant = mode === "reading" ? chooseReadingVariant() : null;
+  const content =
+    mode === "passage"
+      ? buildPassagePrompt(test, subject)
+      : mode === "reading"
+        ? readingPromptFor(variant, test, subject)
+        : buildPrompt(test, subject);
+  const schema =
+    mode === "passage"
+      ? PASSAGE_SCHEMA
+      : mode === "reading"
+        ? readingSchemaFor(variant)
+        : QUESTIONS_SCHEMA;
 
   let response;
   try {
@@ -148,9 +157,9 @@ async function generateDirect({ test, subject, apiKey, signal, mode }) {
         model: MODEL,
         max_tokens: 8000,
         system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: promptFor[key]() }],
+        messages: [{ role: "user", content }],
         output_config: {
-          format: { type: "json_schema", schema: schemaFor[key] },
+          format: { type: "json_schema", schema },
         },
       },
       { signal },
@@ -169,12 +178,13 @@ async function generateDirect({ test, subject, apiKey, signal, mode }) {
 
   const text = response.content.find((block) => block.type === "text")?.text ?? "";
   // The local-key dev path doesn't run the server-side verification pass.
-  const validate = {
-    passage: () => validatePassageSet(text),
-    reading: () => validateReadingSet(text),
-    mcq: () => validateQuestions(text).slice(0, 5),
-  };
-  return { data: validate[key](), verified: false };
+  const data =
+    mode === "passage"
+      ? validatePassageSet(text)
+      : mode === "reading"
+        ? validateReadingFor(variant, text)
+        : validateQuestions(text).slice(0, 5);
+  return { data, verified: false };
 }
 
 function friendlyError(err) {
