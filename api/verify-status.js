@@ -6,6 +6,9 @@
 // Check it with:  curl "https://www.prepnovaai.com/api/verify-status?token=pnstatus"
 // Safe to delete once verification is confirmed working.
 
+import { getSamplePassage } from "../src/lib/demoQuestions.js";
+import { verifyPassage } from "./_verify.js";
+
 export default async function handler(req, res) {
   if ((req.query?.token || "") !== "pnstatus") {
     return res.status(404).json({ error: "Not found." });
@@ -17,14 +20,15 @@ export default async function handler(req, res) {
     return res.status(200).json({
       keyPresent: false,
       model,
-      ok: false,
+      ping: false,
       detail: "OPENAI_API_KEY is not set in this deployment (add it in Vercel, then redeploy).",
     });
   }
 
-  let ok = false;
-  let status = null;
-  let detail = "";
+  // 1) Minimal connectivity/billing ping.
+  let ping = false;
+  let pingStatus = null;
+  let pingDetail = "";
   try {
     const r = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -32,21 +36,32 @@ export default async function handler(req, res) {
         "content-type": "application/json",
         authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
-      body: JSON.stringify({
-        model,
-        max_tokens: 1,
-        messages: [{ role: "user", content: "ping" }],
-      }),
+      body: JSON.stringify({ model, max_tokens: 1, messages: [{ role: "user", content: "ping" }] }),
     });
-    status = r.status;
-    ok = r.ok;
+    pingStatus = r.status;
+    ping = r.ok;
     if (!r.ok) {
       const data = await r.json().catch(() => null);
-      detail = data?.error?.message || `HTTP ${r.status}`;
+      pingDetail = data?.error?.message || `HTTP ${r.status}`;
     }
   } catch (e) {
-    detail = String(e?.message || e);
+    pingDetail = String(e?.message || e);
   }
 
-  return res.status(200).json({ keyPresent: true, model, ok, status, detail });
+  // 2) Real end-to-end verification on the built-in sample passage — exercises
+  // the same structured-output path the live generator uses.
+  const sample = getSamplePassage();
+  let realRun = { verified: false, total: sample.questions.length, kept: null };
+  try {
+    const out = await verifyPassage(sample);
+    realRun = {
+      verified: out.verified,
+      total: sample.questions.length,
+      kept: out.passage.questions.length,
+    };
+  } catch (e) {
+    realRun.error = String(e?.message || e);
+  }
+
+  return res.status(200).json({ keyPresent: true, model, ping, pingStatus, pingDetail, realRun });
 }
