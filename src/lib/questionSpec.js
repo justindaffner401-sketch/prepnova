@@ -75,6 +75,7 @@ export const QUESTIONS_SCHEMA = {
 };
 
 export function buildPrompt(test, subject, count = 5) {
+  if (subject === "Math") return buildMathPrompt(test, count);
   return `Write exactly ${count} multiple-choice practice questions for ${test} ${subject} prep.
 
 Rules:
@@ -86,6 +87,29 @@ Rules:
 - The explanation must defend the choice you marked correct: 2-4 sentences on why that choice is right AND why the most tempting wrong choice fails. Refer to choices by their content (the actual values/words), never by letter or position. The explanation and the choice marked correct must agree.
 - Keep it tight: each question text under 120 words (including any passage), each explanation under 80 words.
 - Plain text only: no markdown, no LaTeX. Write math like "3x + 5 = 20" and exponents like "x^2".`;
+}
+
+// Math has different content and structure on each test, so it gets its own
+// prompt: ACT leans geometry/trig and uses FIVE answer choices; the digital SAT
+// leans algebra + data analysis and uses four.
+export function buildMathPrompt(test, count = 5) {
+  const isACT = test === "ACT";
+  const choiceCount = isACT ? 5 : 4;
+  const topics = isACT
+    ? `ACT Math covers a broad range — number sense and pre-algebra, elementary and intermediate algebra, functions, coordinate geometry, PLANE GEOMETRY (angles, triangles, circles, polygons, area/surface area/volume), and TRIGONOMETRY (SOH-CAH-TOA, the unit circle, basic identities). Include a solid share of geometry and at least one trig question, and mix pure-math problems with real-world word problems.`
+    : `The digital SAT Math emphasizes ALGEBRA (linear equations, inequalities, and systems), ADVANCED MATH (quadratics, exponential growth/decay, polynomials, and other nonlinear functions), and PROBLEM-SOLVING & DATA ANALYSIS (ratios, rates, proportions, percentages, probability, and interpreting statistics or data). Keep geometry/trig light. Favor real-world "in context" word problems with clean numbers.`;
+  return `Write exactly ${count} ${test} Math multiple-choice questions.
+
+${topics}
+A calculator is permitted, so realistic computation is fine. Spread difficulty from easy to hard, including at least one challenging question.
+
+Rules:
+- Each question is fully self-contained in its "question" text (describe any figure in words for now — e.g., "a right triangle with legs 6 and 8").
+- Exactly ${choiceCount} answer choices per question (${isACT ? "ACT Math has five" : "the SAT has four"}). Each choice is an object { "text": "...", "correct": true|false }.
+- ACTUALLY SOLVE each problem first. Mark exactly ONE choice "correct": true and verify it; make the wrong choices reflect common mistakes (sign errors, off-by-one, using the wrong formula, forgetting a step) rather than random values.
+- Spread the correct answer across different positions.
+- "explanation": 2-4 sentences showing the key steps to the answer and naming the most tempting wrong choice's mistake. Refer to choices by their values, never by letter or position.
+- Plain text only: no markdown, no LaTeX. Write math like "3x + 5 = 20", fractions like "3/4", and exponents like "x^2".`;
 }
 
 export function validateQuestions(text) {
@@ -102,7 +126,8 @@ export function validateQuestions(text) {
   for (const q of questions) {
     if (!q || typeof q.question !== "string" || !q.question.trim()) continue;
     if (typeof q.explanation !== "string" || !q.explanation.trim()) continue;
-    if (!Array.isArray(q.choices) || q.choices.length !== 4) continue;
+    // 4 choices for most sections; ACT Math uses 5 (A-E).
+    if (!Array.isArray(q.choices) || q.choices.length < 4 || q.choices.length > 5) continue;
 
     const texts = q.choices.map((c) => c?.text);
     if (!texts.every((t) => typeof t === "string" && t.trim())) continue;

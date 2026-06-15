@@ -46,7 +46,7 @@ import { useAuth } from "../lib/useAuth.js";
 import CalculatorWidget from "../components/CalculatorWidget.jsx";
 
 const SECONDS_PER_QUESTION = 60;
-const LETTERS = ["A", "B", "C", "D"];
+const LETTERS = ["A", "B", "C", "D", "E"]; // ACT Math uses 5 choices
 
 const LOADING_MESSAGES = [
   "Drafting fresh questions…",
