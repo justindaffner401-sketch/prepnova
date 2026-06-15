@@ -153,19 +153,14 @@ export default async function handler(req, res) {
     const text = response.content.find((block) => block.type === "text")?.text ?? "";
     if (passage) {
       // verifyPassage drops disputed questions (and falls back to the
-      // unverified set if that would gut the passage).
-      const set = await verifyPassage(validatePassageSet(text));
-      return res.status(200).json({ passage: set });
+      // unverified set if that would gut the passage). `verified` is true only
+      // when the returned set reflects the verifier's judgment.
+      const { verified, passage: set } = await verifyPassage(validatePassageSet(text));
+      return res.status(200).json({ passage: set, verified });
     }
 
-    let questions = validateQuestions(text);
-    if (verifierEnabled()) {
-      const verified = await verifyMcq(questions);
-      // Use the verified set only if it still has a full 5; otherwise keep the
-      // unverified set so the student never ends up short.
-      if (verified.length >= 5) questions = verified;
-    }
-    return res.status(200).json({ questions: questions.slice(0, 5) });
+    const { verified, questions } = await verifyMcq(validateQuestions(text));
+    return res.status(200).json({ questions: questions.slice(0, 5), verified });
   } catch (err) {
     if (err instanceof Anthropic.RateLimitError) {
       return res

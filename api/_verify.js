@@ -89,8 +89,10 @@ function agrees(map, id, question) {
 
 /* ---------------- Standalone MCQ sets (Math / Reading / Science) ---------------- */
 
+// Returns { verified, questions }. `verified` is true only when the verifier
+// actually ran AND the returned set is the one it approved.
 export async function verifyMcq(questions) {
-  if (!verifierEnabled() || questions.length === 0) return questions;
+  if (!verifierEnabled() || questions.length === 0) return { verified: false, questions };
   const items = questions.map((q, i) => ({ id: i, question: q.question, choices: q.choices }));
   const user = `For each multiple-choice question below, solve it independently and choose the single best answer.
 
@@ -99,8 +101,12 @@ Return ONLY JSON shaped exactly like {"answers":[{"id":0,"choice":2}]} — one e
 QUESTIONS:
 ${JSON.stringify(items)}`;
   const map = await callVerifier(user);
-  if (!map) return questions;
-  return questions.filter((q, i) => agrees(map, i, q));
+  if (!map) return { verified: false, questions };
+  const kept = questions.filter((q, i) => agrees(map, i, q));
+  // Only trust the verified set if a full 5 survived; otherwise keep the
+  // original so the student isn't left short (and don't claim it's verified).
+  if (kept.length >= 5) return { verified: true, questions: kept };
+  return { verified: false, questions };
 }
 
 /* ---------------- Passage sets (ACT English) ---------------- */
@@ -113,8 +119,11 @@ function markedPassage(segments) {
     .join("");
 }
 
+// Returns { verified, passage }. `verified` is true only when the verifier ran
+// AND the returned passage reflects its judgment (all agreed, or disputed
+// questions were dropped and the rest renumbered).
 export async function verifyPassage(passage) {
-  if (!verifierEnabled() || passage.questions.length === 0) return passage;
+  if (!verifierEnabled() || passage.questions.length === 0) return { verified: false, passage };
 
   const items = passage.questions.map((q, i) => ({
     id: i,
@@ -135,11 +144,13 @@ QUESTIONS:
 ${JSON.stringify(items)}`;
 
   const map = await callVerifier(user);
-  if (!map) return passage;
+  if (!map) return { verified: false, passage };
 
   const kept = passage.questions.filter((q, i) => agrees(map, i, q));
-  // Nothing dropped, or so much dropped it'd gut the passage → keep original.
-  if (kept.length === passage.questions.length || kept.length < 5) return passage;
+  // All agreed → verified, nothing to change.
+  if (kept.length === passage.questions.length) return { verified: true, passage };
+  // So much disputed it'd gut the passage → fall back to the unverified set.
+  if (kept.length < 5) return { verified: false, passage };
 
   // Unwrap the underlines of dropped questions to plain text (so the passage
   // still reads correctly), then re-order and renumber what remains.
@@ -148,5 +159,5 @@ ${JSON.stringify(items)}`;
     s.underline && !keptSpanRefs.has(s.ref) ? { text: s.text, underline: false, ref: 0 } : s,
   );
   const { segments, questions } = renumberPassage(adjusted, kept);
-  return { ...passage, segments, questions };
+  return { verified: true, passage: { ...passage, segments, questions } };
 }

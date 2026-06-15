@@ -75,6 +75,7 @@ export default function Practice() {
   const [questions, setQuestions] = useState([]);
   const [passageSet, setPassageSet] = useState(null); // passage-mode payload
   const [result, setResult] = useState(null); // { score, total } at completion
+  const [verified, setVerified] = useState(false); // 2nd-model verification ran
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -122,9 +123,10 @@ export default function Practice() {
 
   if (!valid) return null;
 
-  function beginSession(qs, src) {
+  function beginSession(qs, src, isVerified = false) {
     setQuestions(qs);
     setSource(src);
+    setVerified(isVerified);
     setAnswers([]);
     setCurrent(0);
     setSelected(null);
@@ -134,9 +136,10 @@ export default function Practice() {
     setPhase("active");
   }
 
-  function beginPassageSession(set, src) {
+  function beginPassageSession(set, src, isVerified = false) {
     setPassageSet(set);
     setSource(src);
+    setVerified(isVerified);
     setResult(null);
     savedRef.current = false;
     setPhase("active");
@@ -149,21 +152,21 @@ export default function Practice() {
     abortRef.current = controller;
     try {
       if (passageMode) {
-        const set = await generatePassage({
+        const { passage, verified } = await generatePassage({
           test,
           subject,
           apiKey: getApiKey(),
           signal: controller.signal,
         });
-        beginPassageSession(set, "ai");
+        beginPassageSession(passage, "ai", verified);
       } else {
-        const qs = await generateQuestions({
+        const { questions: qs, verified } = await generateQuestions({
           test,
           subject,
           apiKey: getApiKey(),
           signal: controller.signal,
         });
-        beginSession(qs, "ai");
+        beginSession(qs, "ai", verified);
       }
     } catch (e) {
       if (controller.signal.aborted) return;
@@ -425,6 +428,7 @@ export default function Practice() {
           test={test}
           subject={subject}
           source={source}
+          verified={verified}
           onExit={endSession}
           onComplete={finishPassage}
         />
@@ -449,6 +453,11 @@ export default function Practice() {
                 {source === "sample" && (
                   <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-300">
                     Sample set
+                  </span>
+                )}
+                {verified && (
+                  <span className="flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+                    <Check className="h-3 w-3" /> AI-verified
                   </span>
                 )}
               </div>

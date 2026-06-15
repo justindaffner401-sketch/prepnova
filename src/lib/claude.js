@@ -25,20 +25,23 @@ export { MODEL };
  * Throws an Error with a user-friendly message on failure.
  */
 export async function generateQuestions({ test, subject, apiKey, signal }) {
-  return apiKey
-    ? generateDirect({ test, subject, apiKey, signal, mode: "mcq" })
-    : generateViaProxy({ test, subject, signal, mode: "mcq" });
+  const { data, verified } = apiKey
+    ? await generateDirect({ test, subject, apiKey, signal, mode: "mcq" })
+    : await generateViaProxy({ test, subject, signal, mode: "mcq" });
+  return { questions: data, verified };
 }
 
 /**
  * Generate one passage + its grouped questions (exam-replica format).
- * Same two paths as generateQuestions. Returns the validated passage set
- * { title, segments, questions }.
+ * Same two paths as generateQuestions. Returns { passage, verified } where
+ * passage is { title, segments, questions } and verified indicates whether the
+ * server's 2nd-model verification pass approved the set.
  */
 export async function generatePassage({ test, subject, apiKey, signal }) {
-  return apiKey
-    ? generateDirect({ test, subject, apiKey, signal, mode: "passage" })
-    : generateViaProxy({ test, subject, signal, mode: "passage" });
+  const { data, verified } = apiKey
+    ? await generateDirect({ test, subject, apiKey, signal, mode: "passage" })
+    : await generateViaProxy({ test, subject, signal, mode: "passage" });
+  return { passage: data, verified };
 }
 
 /* ---------------- Server proxy path ---------------- */
@@ -87,14 +90,14 @@ async function generateViaProxy({ test, subject, signal, mode }) {
     if (!data?.passage) {
       throw new Error("The server didn't return a complete passage. Try again.");
     }
-    return data.passage;
+    return { data: data.passage, verified: Boolean(data.verified) };
   }
 
   const questions = Array.isArray(data?.questions) ? data.questions : [];
   if (questions.length < 5) {
     throw new Error("The server didn't return a complete set of questions. Try again.");
   }
-  return questions.slice(0, 5);
+  return { data: questions.slice(0, 5), verified: Boolean(data.verified) };
 }
 
 /* ---------------- Direct browser path ---------------- */
@@ -147,9 +150,11 @@ async function generateDirect({ test, subject, apiKey, signal, mode }) {
   }
 
   const text = response.content.find((block) => block.type === "text")?.text ?? "";
-  // The local-key dev path doesn't run the server-side verification pass; just
-  // show the first five validated questions.
-  return passage ? validatePassageSet(text) : validateQuestions(text).slice(0, 5);
+  // The local-key dev path doesn't run the server-side verification pass.
+  return {
+    data: passage ? validatePassageSet(text) : validateQuestions(text).slice(0, 5),
+    verified: false,
+  };
 }
 
 function friendlyError(err) {

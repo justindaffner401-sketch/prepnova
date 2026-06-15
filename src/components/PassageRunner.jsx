@@ -26,7 +26,15 @@ function formatElapsed(seconds) {
  *  - onExit():   leave the session without scoring
  *  - onComplete({ score, total }): finish and record the result
  */
-export default function PassageRunner({ passage, test, subject, source, onExit, onComplete }) {
+export default function PassageRunner({
+  passage,
+  test,
+  subject,
+  source,
+  verified,
+  onExit,
+  onComplete,
+}) {
   const { title, segments, questions } = passage;
   const total = questions.length;
 
@@ -110,6 +118,11 @@ export default function PassageRunner({ passage, test, subject, source, onExit, 
             {source === "sample" && (
               <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-300">
                 Sample set
+              </span>
+            )}
+            {verified && (
+              <span className="flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+                <Check className="h-3 w-3" /> AI-verified
               </span>
             )}
           </div>
