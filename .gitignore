@@ -5,3 +5,9 @@ dist
 .env.*.local
 *.log
 .DS_Store
+
+# One-time exam-build keys (never commit)
+EXAM_KEYS.txt
+
+# intermediate exam section cache
+public/exams/_parts/

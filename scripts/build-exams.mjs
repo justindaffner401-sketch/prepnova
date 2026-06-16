@@ -44,18 +44,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const OUT_DIR = path.join(ROOT, "public", "exams");
 
-// --- load .env.local into process.env (only keys we need) ---
-function loadEnvLocal() {
-  const file = path.join(ROOT, ".env.local");
+// --- load keys from EXAM_KEYS.txt / .env.local into process.env ---
+function loadKeyFile(file) {
   if (!fs.existsSync(file)) return;
   for (const line of fs.readFileSync(file, "utf8").split("\n")) {
+    if (line.trim().startsWith("#")) continue;
     const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
     if (!m) continue;
     const [, k, v] = m;
-    if (!process.env[k] && v) process.env[k] = v.replace(/^["']|["']$/g, "");
+    if (!process.env[k] && v) process.env[k] = v.replace(/^["']|["']$/g, "").trim();
   }
 }
-loadEnvLocal();
+loadKeyFile(path.join(ROOT, "EXAM_KEYS.txt"));
+loadKeyFile(path.join(ROOT, ".env.local"));
 
 if (!process.env.ANTHROPIC_API_KEY) {
   console.error("Missing ANTHROPIC_API_KEY (set it in the environment or .env.local).");
@@ -134,10 +135,23 @@ async function generateUnit(plan, spec) {
   throw lastErr;
 }
 
+// Build one exam, caching each finished section to public/exams/_parts/ so a
+// timed-out or re-run process resumes where it left off. Returns the assembled
+// exam, or null if some sections are still missing (partial progress).
 async function buildExam(test, n) {
+  const examId = `${test.toLowerCase()}-${n}`;
+  const partsDir = path.join(OUT_DIR, "_parts");
+  fs.mkdirSync(partsDir, { recursive: true });
   const sectionKeys = EXAM_SECTIONS[test];
-  const sections = [];
+  const byKey = {};
+
   for (const key of sectionKeys) {
+    const partFile = path.join(partsDir, `${examId}-${key}.json`);
+    if (fs.existsSync(partFile)) {
+      byKey[key] = JSON.parse(fs.readFileSync(partFile, "utf8"));
+      console.log(`  ${SECTION_PLANS[key].label} — cached`);
+      continue;
+    }
     const plan = SECTION_PLANS[key];
     console.log(`  ${plan.label}…`);
     const units = [];
@@ -150,13 +164,17 @@ async function buildExam(test, n) {
       units.push(unit);
     }
     const total = units.reduce((a, u) => a + (u.payload.questions?.length ?? 0), 0);
-    sections.push({ planKey: key, label: plan.label, minutes: plan.minutes, questions: total, units });
+    const section = { planKey: key, label: plan.label, minutes: plan.minutes, questions: total, units };
+    fs.writeFileSync(partFile, JSON.stringify(section));
+    byKey[key] = section;
   }
+
+  if (sectionKeys.some((k) => !byKey[k])) return null; // partial
   return {
-    id: `${test.toLowerCase()}-${n}`,
+    id: examId,
     test,
     label: `${test} Practice Exam ${n}`,
-    sections,
+    sections: sectionKeys.map((k) => byKey[k]),
   };
 }
 
@@ -177,6 +195,10 @@ async function main() {
     } else {
       console.log(`Building exam ${id}…`);
       exam = await buildExam(TEST, n);
+      if (!exam) {
+        console.log(`  exam ${id} still partial — re-run to finish.\n`);
+        continue;
+      }
       fs.writeFileSync(file, JSON.stringify(exam));
       console.log(`  → wrote ${path.relative(ROOT, file)}\n`);
     }

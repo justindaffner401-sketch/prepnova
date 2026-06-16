@@ -1,3 +1,35 @@
 {
-  "exams": []
+  "exams": [
+    {
+      "id": "act-1",
+      "test": "ACT",
+      "label": "ACT Practice Exam 1",
+      "sections": [
+        {
+          "planKey": "ACT-English",
+          "label": "ACT English",
+          "minutes": 35,
+          "questions": 33
+        },
+        {
+          "planKey": "ACT-Math",
+          "label": "ACT Math",
+          "minutes": 50,
+          "questions": 33
+        },
+        {
+          "planKey": "ACT-Reading",
+          "label": "ACT Reading",
+          "minutes": 40,
+          "questions": 34
+        },
+        {
+          "planKey": "ACT-Science",
+          "label": "ACT Science",
+          "minutes": 40,
+          "questions": 40
+        }
+      ]
+    }
+  ]
 }
