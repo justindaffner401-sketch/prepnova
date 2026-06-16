@@ -122,11 +122,22 @@ export default function Landing() {
       {/* ---------------- Hero ---------------- */}
       <section className="relative overflow-hidden">
         <div className="bg-grid absolute inset-0" aria-hidden="true" />
+        {/* Living aurora — drifting orbs */}
         <div
-          className="glow-blob -top-32 left-1/2 h-96 w-[42rem] -translate-x-1/2 bg-electric-600/25"
+          className="glow-blob anim-drift -top-40 -left-24 h-80 w-80 bg-electric-600/30"
+          style={{ "--dx": "9%", "--dy": "7%" }}
           aria-hidden="true"
         />
-        <div className="glow-blob top-40 -left-32 h-72 w-72 bg-cyan-500/10" aria-hidden="true" />
+        <div
+          className="glow-blob anim-drift -top-24 right-[-8rem] h-96 w-96 bg-cyan-500/20"
+          style={{ "--dx": "-8%", "--dy": "6%", animationDelay: "-6s" }}
+          aria-hidden="true"
+        />
+        <div
+          className="glow-blob anim-drift bottom-[-6rem] left-1/3 h-72 w-72 bg-violet-500/15"
+          style={{ "--dx": "6%", "--dy": "-8%", animationDelay: "-12s" }}
+          aria-hidden="true"
+        />
 
         <div className="container-pn relative grid items-center gap-12 pt-32 pb-20 sm:pt-40 lg:grid-cols-2 lg:pb-28">
           <div>
@@ -141,7 +152,7 @@ export default function Landing() {
             >
               Your Score.
               <br />
-              <span className="text-gradient">Elevated.</span>
+              <span className="text-gradient-anim">Elevated.</span>
             </h1>
 
             <p
@@ -173,6 +184,23 @@ export default function Landing() {
             >
               8 full-length exams · AI-verified · $29/month · Cancel anytime
             </p>
+
+            <div
+              className="anim-fade-up mt-8 grid max-w-lg grid-cols-2 gap-3 sm:grid-cols-4"
+              style={{ animationDelay: "400ms" }}
+            >
+              {[
+                ["8", "Full-length exams"],
+                ["∞", "Practice questions"],
+                ["2×", "AI-checked answers"],
+                ["<$1", "Per day"],
+              ].map(([n, l]) => (
+                <div key={l} className="glass glow-card px-3 py-3 text-center">
+                  <p className="font-display text-2xl font-extrabold text-gradient">{n}</p>
+                  <p className="mt-0.5 text-[11px] leading-tight text-slate-400">{l}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="anim-fade-up flex justify-center lg:justify-end" style={{ animationDelay: "200ms" }}>
@@ -218,11 +246,8 @@ export default function Landing() {
 
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((f) => (
-              <div
-                key={f.title}
-                className="glass group p-6 transition-all duration-300 hover:-translate-y-1 hover:border-electric-400/40"
-              >
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-electric-500/15 text-electric-400 transition-colors group-hover:bg-electric-500/25">
+              <div key={f.title} className="glass glow-card group p-6">
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-electric-500/15 text-electric-400 transition-colors group-hover:bg-electric-500/25 group-hover:text-electric-300">
                   <f.icon className="h-5 w-5" />
                 </span>
                 <h3 className="mt-4 font-display font-bold text-white">{f.title}</h3>

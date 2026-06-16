@@ -133,11 +133,74 @@
   animation: spinSlow 1.4s linear infinite;
 }
 
+/* --- Pop: animated gradient title --- */
+.text-gradient-anim {
+  background-image: linear-gradient(92deg, #60a5fa 0%, #22d3ee 35%, #a5f3fc 55%, #60a5fa 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradientShift 7s ease-in-out infinite;
+}
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 0; }
+  50% { background-position: 100% 0; }
+}
+
+/* --- Pop: drifting aurora orbs --- */
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(var(--dx, 5%), var(--dy, -5%)) scale(1.15); }
+}
+.anim-drift {
+  animation: drift 18s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* --- Pop: shine sweep on primary buttons --- */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 -160%;
+  width: 55%;
+  background: linear-gradient(120deg, transparent, rgb(255 255 255 / 0.4), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+.btn-primary:hover::after {
+  left: 160%;
+}
+
+/* --- Pop: glow-on-hover cards --- */
+.glow-card {
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s,
+    border-color 0.3s;
+}
+.glow-card:hover {
+  transform: translateY(-4px);
+  border-color: rgb(96 165 250 / 0.5);
+  box-shadow: 0 18px 55px -14px rgb(59 130 246 / 0.5);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .anim-fade-up,
   .anim-float,
-  .anim-spin-slow {
+  .anim-spin-slow,
+  .anim-drift,
+  .text-gradient-anim {
     animation: none;
+  }
+  .btn-primary::after,
+  .glow-card {
+    transition: none;
   }
   html {
     scroll-behavior: auto;
