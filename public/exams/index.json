@@ -30,6 +30,99 @@
           "questions": 40
         }
       ]
+    },
+    {
+      "id": "act-2",
+      "test": "ACT",
+      "label": "ACT Practice Exam 2",
+      "sections": [
+        {
+          "planKey": "ACT-English",
+          "label": "ACT English",
+          "minutes": 35,
+          "questions": 34
+        },
+        {
+          "planKey": "ACT-Math",
+          "label": "ACT Math",
+          "minutes": 50,
+          "questions": 27
+        },
+        {
+          "planKey": "ACT-Reading",
+          "label": "ACT Reading",
+          "minutes": 40,
+          "questions": 34
+        },
+        {
+          "planKey": "ACT-Science",
+          "label": "ACT Science",
+          "minutes": 40,
+          "questions": 40
+        }
+      ]
+    },
+    {
+      "id": "act-3",
+      "test": "ACT",
+      "label": "ACT Practice Exam 3",
+      "sections": [
+        {
+          "planKey": "ACT-English",
+          "label": "ACT English",
+          "minutes": 35,
+          "questions": 37
+        },
+        {
+          "planKey": "ACT-Math",
+          "label": "ACT Math",
+          "minutes": 50,
+          "questions": 29
+        },
+        {
+          "planKey": "ACT-Reading",
+          "label": "ACT Reading",
+          "minutes": 40,
+          "questions": 34
+        },
+        {
+          "planKey": "ACT-Science",
+          "label": "ACT Science",
+          "minutes": 40,
+          "questions": 40
+        }
+      ]
+    },
+    {
+      "id": "act-4",
+      "test": "ACT",
+      "label": "ACT Practice Exam 4",
+      "sections": [
+        {
+          "planKey": "ACT-English",
+          "label": "ACT English",
+          "minutes": 35,
+          "questions": 34
+        },
+        {
+          "planKey": "ACT-Math",
+          "label": "ACT Math",
+          "minutes": 50,
+          "questions": 23
+        },
+        {
+          "planKey": "ACT-Reading",
+          "label": "ACT Reading",
+          "minutes": 40,
+          "questions": 34
+        },
+        {
+          "planKey": "ACT-Science",
+          "label": "ACT Science",
+          "minutes": 40,
+          "questions": 38
+        }
+      ]
     }
   ]
 }
