@@ -1,8 +1,23 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Footer from "../components/Footer.jsx";
 import WhyUs from "../components/WhyUs.jsx";
+import { useReveal } from "../lib/useReveal.js";
 import { authEnabled } from "../lib/supabase.js";
+
+// 3D hero is heavy (three.js); lazy-load so only the landing route pays for it.
+const Hero3D = lazy(() => import("../components/Hero3D.jsx"));
+
+// Reveal-on-scroll wrapper.
+function Reveal({ children, className = "", stagger = false, as: Tag = "div" }) {
+  const [ref, shown] = useReveal();
+  const base = stagger ? "reveal-stagger" : "reveal";
+  return (
+    <Tag ref={ref} className={`${base} ${shown ? "reveal-in" : ""} ${className}`}>
+      {children}
+    </Tag>
+  );
+}
 import {
   ArrowRight,
   BookOpen,
@@ -204,20 +219,31 @@ export default function Landing() {
           </div>
 
           <div className="anim-fade-up flex justify-center lg:justify-end" style={{ animationDelay: "200ms" }}>
-            <MockQuestionCard />
+            <div className="relative">
+              {/* Live 3D orb backdrop */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Suspense fallback={null}>
+                  <Hero3D />
+                </Suspense>
+              </div>
+              {/* Product card floating in front (frosted glass over the orb) */}
+              <div className="relative z-10">
+                <MockQuestionCard />
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ---------------- How it works ---------------- */}
       <section className="border-y border-white/5 bg-navy-950/40">
-        <div className="container-pn grid gap-8 py-12 sm:grid-cols-3">
+        <Reveal stagger className="container-pn grid gap-8 py-12 sm:grid-cols-3">
           {[
             ["01", "Pick your test", "ACT or SAT — then call out your weakest subject."],
             ["02", "Drill or sit an exam", "Targeted drills or a full-length timed exam — all questions double-checked by a comprehensive AI system."],
             ["03", "Watch it climb", "Every session is charted so progress is impossible to miss."],
-          ].map(([num, title, body]) => (
-            <div key={num} className="flex gap-4">
+          ].map(([num, title, body], i) => (
+            <div key={num} className="flex gap-4" style={{ "--i": i }}>
               <span className="font-display text-3xl font-extrabold text-electric-500/40">{num}</span>
               <div>
                 <p className="font-display font-bold text-white">{title}</p>
@@ -225,7 +251,7 @@ export default function Landing() {
               </div>
             </div>
           ))}
-        </div>
+        </Reveal>
       </section>
 
       {/* ---------------- Features ---------------- */}
@@ -244,9 +270,13 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="glass glow-card group p-6">
+          <Reveal stagger className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map((f, i) => (
+              <div
+                key={f.title}
+                style={{ "--i": i }}
+                className="glass glow-card group p-6 hover:scale-[1.02]"
+              >
                 <span className="grid h-11 w-11 place-items-center rounded-xl bg-electric-500/15 text-electric-400 transition-colors group-hover:bg-electric-500/25 group-hover:text-electric-300">
                   <f.icon className="h-5 w-5" />
                 </span>
@@ -254,7 +284,7 @@ export default function Landing() {
                 <p className="mt-2 text-sm leading-relaxed text-slate-400">{f.body}</p>
               </div>
             ))}
-          </div>
+          </Reveal>
         </div>
       </section>
 
@@ -344,7 +374,7 @@ export default function Landing() {
 
       {/* ---------------- Signup CTA ---------------- */}
       <section className="container-pn py-20 sm:py-24">
-        <div className="relative overflow-hidden rounded-3xl border border-electric-400/30 bg-gradient-to-br from-navy-800 via-navy-900 to-navy-950 px-6 py-14 text-center sm:px-12">
+        <Reveal className="relative overflow-hidden rounded-3xl border border-electric-400/30 bg-gradient-to-br from-navy-800 via-navy-900 to-navy-950 px-6 py-14 text-center sm:px-12">
           <div className="glow-blob -top-24 left-1/2 h-64 w-[36rem] -translate-x-1/2 bg-electric-500/20" aria-hidden="true" />
           <div className="relative">
             <h2 className="font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
@@ -377,7 +407,7 @@ export default function Landing() {
               Practice mode is free to try. Plans start at $29/month.
             </p>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       <Footer />
