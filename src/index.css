@@ -21,10 +21,15 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* Navy base lives on the canvas (html), NOT body — so the fixed -z-10
+       aurora layer paints above it. A background on <body> would paint over
+       any negative-z-index fixed element and hide the aurora. */
+    @apply bg-navy-900;
   }
 
   body {
-    @apply bg-navy-900 font-sans text-slate-300 antialiased;
+    @apply font-sans text-slate-300 antialiased;
+    background: transparent;
   }
 
   ::selection {
@@ -190,6 +195,53 @@
   box-shadow: 0 18px 55px -14px rgb(59 130 246 / 0.5);
 }
 
+/* --- Pop: app-wide aurora background --- */
+.aurora-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+  /* faint base wash so the aurora reads on every page */
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(37, 99, 235, 0.12), transparent 60%);
+}
+.aurora-bg::before,
+.aurora-bg::after {
+  content: "";
+  position: absolute;
+  inset: -35%;
+  background-repeat: no-repeat;
+  will-change: transform;
+}
+.aurora-bg::before {
+  background-image:
+    radial-gradient(45% 60% at 18% 20%, rgba(59, 130, 246, 0.6), transparent 70%),
+    radial-gradient(50% 58% at 80% 32%, rgba(34, 211, 238, 0.5), transparent 70%),
+    radial-gradient(55% 62% at 48% 78%, rgba(129, 140, 248, 0.45), transparent 72%);
+  filter: blur(70px);
+  opacity: 0.6;
+  animation: auroraDrift1 26s ease-in-out infinite alternate;
+}
+.aurora-bg::after {
+  background-image:
+    radial-gradient(42% 52% at 62% 18%, rgba(103, 232, 249, 0.45), transparent 70%),
+    radial-gradient(48% 58% at 28% 64%, rgba(59, 130, 246, 0.45), transparent 72%),
+    radial-gradient(40% 50% at 88% 78%, rgba(99, 102, 241, 0.38), transparent 72%);
+  filter: blur(82px);
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  animation: auroraDrift2 34s ease-in-out infinite alternate;
+}
+@keyframes auroraDrift1 {
+  0% { transform: translate3d(-4%, -2%, 0) rotate(0deg) scale(1.05); }
+  100% { transform: translate3d(5%, 4%, 0) rotate(8deg) scale(1.18); }
+}
+@keyframes auroraDrift2 {
+  0% { transform: translate3d(4%, 3%, 0) rotate(0deg) scale(1.12); }
+  100% { transform: translate3d(-6%, -3%, 0) rotate(-7deg) scale(1.04); }
+}
+
 /* --- Pop: scroll-reveal --- */
 .reveal {
   opacity: 0;
@@ -222,7 +274,9 @@
   .anim-float,
   .anim-spin-slow,
   .anim-drift,
-  .text-gradient-anim {
+  .text-gradient-anim,
+  .aurora-bg::before,
+  .aurora-bg::after {
     animation: none;
   }
   .btn-primary::after,

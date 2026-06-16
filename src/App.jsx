@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import AuroraBackground from "./components/AuroraBackground.jsx";
 import Navbar from "./components/Navbar.jsx";
 import Landing from "./pages/Landing.jsx";
 import SubjectSelect from "./pages/SubjectSelect.jsx";
@@ -20,6 +21,7 @@ function ScrollToTop() {
 export default function App() {
   return (
     <div className="min-h-screen">
+      <AuroraBackground />
       <ScrollToTop />
       <Navbar />
       <Routes>
