@@ -6,6 +6,7 @@ import { SECTION_PLANS, EXAM_SECTIONS } from "../lib/sectionPlans.js";
 import { getApiKey, saveResult } from "../lib/storage.js";
 import { authEnabled } from "../lib/supabase.js";
 import { useAuth } from "../lib/useAuth.js";
+import { setFocusMode } from "../lib/focusMode.js";
 import { ArrowRight, Bolt, Check, Clock, RotateCcw, Sparkles } from "../components/icons.jsx";
 
 const TESTS = ["ACT", "SAT"];
@@ -38,6 +39,13 @@ export default function Exam() {
     document.title = "PrepNova — Full-length exam";
   }, []);
   useEffect(() => () => abortRef.current?.abort(), []);
+
+  // Freeze the 3D background through a running exam (including the between-
+  // section break, so it doesn't pop in and out) — only "setup"/"done" show it.
+  useEffect(() => {
+    setFocusMode(phase === "active" || phase === "break");
+    return () => setFocusMode(false);
+  }, [phase]);
 
   // Load the prebuilt-exam library (static).
   useEffect(() => {

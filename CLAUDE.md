@@ -122,13 +122,29 @@ All custom CSS utilities live in `src/index.css`; **everything is disabled under
 - **Practice-page CTA (DONE, live):** `SubjectSelect.jsx` has a "Take a full-length exam" card → `/exam`.
 
 - **App-wide aurora background (DONE, live):** `src/components/AuroraBackground.jsx` + `.aurora-bg`
-  in `src/index.css`, mounted app-wide in `App.jsx` (`fixed inset-0 -z-10`) — a 21st.dev-style
-  flowing aurora behind every page. **Fixed the invisible-on-flat-pages bug:** the navy base used to
-  be on `<body>`, but a `<body>` background paints over any negative-z-index fixed layer, so it hid
-  the `-z-10` aurora on content pages like `/select` (the landing only *looked* fine because of the
-  hero's own decorative orbs). Fix: navy base now lives on the **`<html>` canvas** (`@apply
-  bg-navy-900`) and `<body>` is `background: transparent`, so the aurora paints above the base and
-  below all content — no per-page wrappers needed. Verified in-browser on `/select` + landing.
+  in `src/index.css`, mounted app-wide in `App.jsx`. **Fixed the invisible-on-flat-pages bug:** the
+  navy base used to be on `<body>`, but a `<body>` background paints over any negative-z-index fixed
+  layer, so it hid the aurora on content pages like `/select`. Fix: navy base now lives on the
+  **`<html>` canvas** (`@apply bg-navy-900`) and `<body>` is `background: transparent`. The aurora
+  was then demoted to **`-z-20`** at low opacity to act as a faint nebula tint *behind* the 3D space
+  scene (below).
+- **App-wide live 3D space background (DONE, live):** `src/components/SpaceBackground.jsx` —
+  react-three-fiber scene mounted app-wide in `App.jsx` (`fixed inset-0 -z-10`, **`React.lazy` +
+  Suspense** so the `three` chunk never blocks first paint). A brand-tinted **black hole**: event
+  horizon sphere + a custom GLSL **accretion-disk shader** (swirling plasma, radial heat falloff,
+  Doppler-bright side; additive blending) + a glow-halo plane, over a drifting drei `<Stars>`
+  field with subtle pointer parallax. Placement is via the `HOLE_POSITION/TILT/SCALE` consts
+  (upper-area so it never sits as a void behind text). **Perf/considerate:** capped `dpr [1,1.5]`,
+  no scene lights (basic/shader materials only), freezes under `prefers-reduced-motion`, useFrame
+  early-returns when `document.hidden`. **R3F sizing gotcha:** inside a `fixed`, lazy-mounted parent
+  R3F can mount at the default 300×150 and miss its measure — fixed by firing staggered
+  `window.resize` events + a `ResizeObserver` on the wrapper in a mount effect.
+  - **Off during timed tests:** `src/lib/focusMode.js` is a tiny `useSyncExternalStore` signal.
+    `Practice.jsx` sets it true when `phase==="active"`; `Exam.jsx` when `phase==="active"||"break"`.
+    `App.jsx` reads `useFocusMode()` and **unmounts** `<SpaceBackground/>` during a live test (frees
+    the WebGL context; the lazy chunk stays cached so it returns instantly after). The faint aurora
+    stays as a calm base. **Cost:** because it imports `three`, the ~888 KB (≈240 KB gz) three chunk
+    now lazy-loads on every non-test route (was landing-only).
 
 ## Conventions / gotchas
 

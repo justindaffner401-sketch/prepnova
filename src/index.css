@@ -199,7 +199,8 @@
 .aurora-bg {
   position: fixed;
   inset: 0;
-  z-index: -10;
+  /* sits BEHIND the live 3D space background (-z-10) as a faint nebula tint */
+  z-index: -20;
   overflow: hidden;
   pointer-events: none;
   /* faint base wash so the aurora reads on every page */
@@ -220,7 +221,7 @@
     radial-gradient(50% 58% at 80% 32%, rgba(34, 211, 238, 0.5), transparent 70%),
     radial-gradient(55% 62% at 48% 78%, rgba(129, 140, 248, 0.45), transparent 72%);
   filter: blur(70px);
-  opacity: 0.6;
+  opacity: 0.32;
   animation: auroraDrift1 26s ease-in-out infinite alternate;
 }
 .aurora-bg::after {
@@ -229,7 +230,7 @@
     radial-gradient(48% 58% at 28% 64%, rgba(59, 130, 246, 0.45), transparent 72%),
     radial-gradient(40% 50% at 88% 78%, rgba(99, 102, 241, 0.38), transparent 72%);
   filter: blur(82px);
-  opacity: 0.55;
+  opacity: 0.3;
   mix-blend-mode: screen;
   animation: auroraDrift2 34s ease-in-out infinite alternate;
 }
