@@ -5,10 +5,9 @@ import WhyUs from "../components/WhyUs.jsx";
 import { authEnabled } from "../lib/supabase.js";
 import {
   ArrowRight,
-  Bolt,
   BookOpen,
   Check,
-  Clock,
+  GraduationCap,
   Sparkles,
   Target,
   TrendingUp,
@@ -16,43 +15,45 @@ import {
 
 const FEATURES = [
   {
-    icon: Bolt,
-    title: "Fresh questions, every time",
-    body: "Claude AI writes new ACT- and SAT-style questions on demand, so you never grind the same worksheet twice.",
+    icon: Check,
+    title: "Double-checked by a second AI",
+    body: "Every question is written by AI, then independently re-solved by a different AI model — and any answer the two disagree on is thrown out. You drill questions you can actually trust.",
+  },
+  {
+    icon: GraduationCap,
+    title: "Full-length, timed exams",
+    body: "Eight complete ACT & SAT practice tests, scored section by section on a clock you control. Sit the whole exam or one section at a time — and they load instantly.",
   },
   {
     icon: BookOpen,
+    title: "Looks like the real test",
+    body: "Underlined English passages, paired and graph-based reading, geometry diagrams — PrepNova mirrors the actual digital ACT and SAT, not a generic worksheet.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Kept current all year",
+    body: "Questions and concepts are reviewed and refreshed as new official ACT and SAT exams are released — so you're never prepping for last year's test.",
+  },
+  {
+    icon: Sparkles,
     title: "Tutor-grade explanations",
     body: "Every answer comes with a step-by-step breakdown of why it's right — and why the tempting wrong choice isn't.",
   },
   {
-    icon: Clock,
-    title: "Beat the clock",
-    body: "A 60-second timer on every question builds the pacing instincts the real test demands.",
-  },
-  {
     icon: Target,
     title: "Built around your weaknesses",
-    body: "Pick your test and your weakest subject, then drill exactly where the points are hiding.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Progress you can see",
-    body: "Every session is scored and charted, so you can watch your accuracy climb week over week.",
-  },
-  {
-    icon: Sparkles,
-    title: "Always on",
-    body: "No scheduling, no commute, no hourly meter running. Your AI tutor is ready at 6 a.m. or midnight.",
+    body: "Pick your test and weakest subject and drill exactly where the points are hiding, with progress charted session over session.",
   },
 ];
 
 const PREPNOVA_PERKS = [
-  "Unlimited AI-generated questions",
-  "ACT & SAT · Math, English, Reading, Science",
+  "8 full-length, timed practice exams",
+  "Every question verified by a second AI",
+  "Real digital ACT & SAT format",
+  "Updated as new official tests release",
   "Detailed explanation on every answer",
-  "60-second pacing drills",
   "Progress tracking & analytics",
+  "ACT & SAT · all subjects",
   "Cancel anytime",
 ];
 
@@ -131,7 +132,7 @@ export default function Landing() {
           <div>
             <span className="anim-fade-up inline-flex items-center gap-2 rounded-full border border-electric-400/30 bg-electric-500/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-electric-300">
               <Sparkles className="h-3.5 w-3.5" />
-              AI-powered ACT &amp; SAT prep
+              AI-built, AI-verified ACT &amp; SAT prep
             </span>
 
             <h1
@@ -147,9 +148,10 @@ export default function Landing() {
               className="anim-fade-up mt-6 max-w-xl text-lg leading-relaxed text-slate-400"
               style={{ animationDelay: "160ms" }}
             >
-              PrepNova generates unlimited practice questions tuned to your
-              weakest subjects, explains every answer like a private tutor, and
-              tracks your climb — for less than a dollar a day.
+              Unlimited ACT &amp; SAT practice in the real digital-test format —
+              every question double-checked by a second AI, plus eight
+              full-length timed exams and tutor-grade explanations. For less than
+              a dollar a day.
             </p>
 
             <div
@@ -169,7 +171,7 @@ export default function Landing() {
               className="anim-fade-up mt-6 text-xs font-medium tracking-wide text-slate-500"
               style={{ animationDelay: "320ms" }}
             >
-              ACT &amp; SAT · 4 subjects · $29/month · Cancel anytime
+              8 full-length exams · AI-verified · $29/month · Cancel anytime
             </p>
           </div>
 
@@ -184,7 +186,7 @@ export default function Landing() {
         <div className="container-pn grid gap-8 py-12 sm:grid-cols-3">
           {[
             ["01", "Pick your test", "ACT or SAT — then call out your weakest subject."],
-            ["02", "Drill weak spots", "Five fresh AI questions, 60 seconds each, explained in depth."],
+            ["02", "Drill or sit an exam", "Targeted drills or a full-length timed exam — every question double-checked by a second AI."],
             ["03", "Watch it climb", "Every session is charted so progress is impossible to miss."],
           ].map(([num, title, body]) => (
             <div key={num} className="flex gap-4">
@@ -208,9 +210,9 @@ export default function Landing() {
               <span className="text-gradient">None of the invoice.</span>
             </h2>
             <p className="mt-4 text-slate-400">
-              PrepNova pairs Claude AI with the structure of real test prep —
-              targeted drills, honest pacing, and explanations that actually
-              teach.
+              PrepNova pairs AI generation with a second-AI accuracy check and
+              the structure of the real digital exams — so every question is
+              realistic, verified, and explained.
             </p>
           </div>
 
