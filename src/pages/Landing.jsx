@@ -2,8 +2,10 @@ import { lazy, Suspense, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Footer from "../components/Footer.jsx";
 import WhyUs from "../components/WhyUs.jsx";
+import FeatureBento from "../components/FeatureBento.jsx";
 import { useReveal } from "../lib/useReveal.js";
 import { authEnabled } from "../lib/supabase.js";
+import { ArrowRight, Check, Sparkles } from "../components/icons.jsx";
 
 // 3D hero is heavy (three.js); lazy-load so only the landing route pays for it.
 const Hero3D = lazy(() => import("../components/Hero3D.jsx"));
@@ -18,48 +20,6 @@ function Reveal({ children, className = "", stagger = false, as: Tag = "div" }) 
     </Tag>
   );
 }
-import {
-  ArrowRight,
-  BookOpen,
-  Check,
-  GraduationCap,
-  Sparkles,
-  Target,
-  TrendingUp,
-} from "../components/icons.jsx";
-
-const FEATURES = [
-  {
-    icon: Check,
-    title: "Double-checked by a comprehensive AI system",
-    body: "Every question is written by AI, then independently re-solved by a different AI model — and any answer the two disagree on is thrown out. You drill questions you can actually trust.",
-  },
-  {
-    icon: GraduationCap,
-    title: "Full-length, timed exams",
-    body: "Eight complete ACT & SAT practice tests, scored section by section on a clock you control. Sit the whole exam or one section at a time — and they load instantly.",
-  },
-  {
-    icon: BookOpen,
-    title: "Looks like the real test",
-    body: "Underlined English passages, paired and graph-based reading, geometry diagrams — PrepNova mirrors the actual digital ACT and SAT, not a generic worksheet.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Kept current all year",
-    body: "Questions and concepts are reviewed and refreshed as new official ACT and SAT exams are released — so you're never prepping for last year's test.",
-  },
-  {
-    icon: Sparkles,
-    title: "Tutor-grade explanations",
-    body: "Every answer comes with a step-by-step breakdown of why it's right — and why the tempting wrong choice isn't.",
-  },
-  {
-    icon: Target,
-    title: "Built around your weaknesses",
-    body: "Pick your test and weakest subject and drill exactly where the points are hiding, with progress charted session over session.",
-  },
-];
 
 const PREPNOVA_PERKS = [
   "8 full-length, timed practice exams",
@@ -270,21 +230,7 @@ export default function Landing() {
             </p>
           </div>
 
-          <Reveal stagger className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((f, i) => (
-              <div
-                key={f.title}
-                style={{ "--i": i }}
-                className="glass glow-card group p-6 hover:scale-[1.02]"
-              >
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-electric-500/15 text-electric-400 transition-colors group-hover:bg-electric-500/25 group-hover:text-electric-300">
-                  <f.icon className="h-5 w-5" />
-                </span>
-                <h3 className="mt-4 font-display font-bold text-white">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-400">{f.body}</p>
-              </div>
-            ))}
-          </Reveal>
+          <FeatureBento />
         </div>
       </section>
 
