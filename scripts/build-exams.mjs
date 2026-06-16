@@ -184,39 +184,46 @@ async function main() {
     `Building ${COUNT} ${TEST} exam(s). Verification: ${verifierEnabled() ? "ON" : "OFF (no OPENAI_API_KEY)"}\n`,
   );
 
-  const manifest = [];
+  // Build the requested exams for this run.
   for (let n = 1; n <= COUNT; n++) {
     const id = `${TEST.toLowerCase()}-${n}`;
     const file = path.join(OUT_DIR, `${id}.json`);
-    let exam;
     if (fs.existsSync(file)) {
       console.log(`Exam ${id} already exists — skipping.`);
-      exam = JSON.parse(fs.readFileSync(file, "utf8"));
-    } else {
-      console.log(`Building exam ${id}…`);
-      exam = await buildExam(TEST, n);
-      if (!exam) {
-        console.log(`  exam ${id} still partial — re-run to finish.\n`);
-        continue;
-      }
-      fs.writeFileSync(file, JSON.stringify(exam));
-      console.log(`  → wrote ${path.relative(ROOT, file)}\n`);
+      continue;
     }
-    manifest.push({
-      id: exam.id,
-      test: exam.test,
-      label: exam.label,
-      sections: exam.sections.map((s) => ({
+    console.log(`Building exam ${id}…`);
+    const exam = await buildExam(TEST, n);
+    if (!exam) {
+      console.log(`  exam ${id} still partial — re-run to finish.\n`);
+      continue;
+    }
+    fs.writeFileSync(file, JSON.stringify(exam));
+    console.log(`  → wrote ${path.relative(ROOT, file)}\n`);
+  }
+
+  // Rebuild the manifest from EVERY exam file on disk (so running one test
+  // never drops another test's exams). Sorted for a stable order.
+  const files = fs
+    .readdirSync(OUT_DIR)
+    .filter((f) => /^(act|sat)-\d+\.json$/.test(f))
+    .sort();
+  const manifest = files.map((f) => {
+    const e = JSON.parse(fs.readFileSync(path.join(OUT_DIR, f), "utf8"));
+    return {
+      id: e.id,
+      test: e.test,
+      label: e.label,
+      sections: e.sections.map((s) => ({
         planKey: s.planKey,
         label: s.label,
         minutes: s.minutes,
         questions: s.questions,
       })),
-    });
-  }
-
+    };
+  });
   fs.writeFileSync(path.join(OUT_DIR, "index.json"), JSON.stringify({ exams: manifest }, null, 2));
-  console.log("Done. Wrote public/exams/index.json");
+  console.log(`Done. Manifest now lists: ${manifest.map((m) => m.id).join(", ")}`);
 }
 
 main().catch((e) => {

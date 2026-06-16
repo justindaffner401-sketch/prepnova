@@ -123,6 +123,82 @@
           "questions": 38
         }
       ]
+    },
+    {
+      "id": "sat-1",
+      "test": "SAT",
+      "label": "SAT Practice Exam 1",
+      "sections": [
+        {
+          "planKey": "SAT-English",
+          "label": "SAT Reading & Writing",
+          "minutes": 32,
+          "questions": 21
+        },
+        {
+          "planKey": "SAT-Math",
+          "label": "SAT Math",
+          "minutes": 35,
+          "questions": 18
+        }
+      ]
+    },
+    {
+      "id": "sat-2",
+      "test": "SAT",
+      "label": "SAT Practice Exam 2",
+      "sections": [
+        {
+          "planKey": "SAT-English",
+          "label": "SAT Reading & Writing",
+          "minutes": 32,
+          "questions": 22
+        },
+        {
+          "planKey": "SAT-Math",
+          "label": "SAT Math",
+          "minutes": 35,
+          "questions": 20
+        }
+      ]
+    },
+    {
+      "id": "sat-3",
+      "test": "SAT",
+      "label": "SAT Practice Exam 3",
+      "sections": [
+        {
+          "planKey": "SAT-English",
+          "label": "SAT Reading & Writing",
+          "minutes": 32,
+          "questions": 22
+        },
+        {
+          "planKey": "SAT-Math",
+          "label": "SAT Math",
+          "minutes": 35,
+          "questions": 13
+        }
+      ]
+    },
+    {
+      "id": "sat-4",
+      "test": "SAT",
+      "label": "SAT Practice Exam 4",
+      "sections": [
+        {
+          "planKey": "SAT-English",
+          "label": "SAT Reading & Writing",
+          "minutes": 32,
+          "questions": 21
+        },
+        {
+          "planKey": "SAT-Math",
+          "label": "SAT Math",
+          "minutes": 35,
+          "questions": 16
+        }
+      ]
     }
   ]
 }
