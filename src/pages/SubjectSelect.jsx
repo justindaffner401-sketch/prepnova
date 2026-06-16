@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getLastSelection, setLastSelection } from "../lib/storage.js";
 import PortalTransition from "../components/PortalTransition.jsx";
 import {
@@ -7,6 +7,7 @@ import {
   BookOpen,
   Check,
   Flask,
+  GraduationCap,
   PenLine,
   Sigma,
 } from "../components/icons.jsx";
@@ -177,6 +178,25 @@ export default function SubjectSelect() {
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>
+
+        {/* Full-length exam call-to-action */}
+        <Link
+          to="/exam"
+          className="group mt-10 flex items-center justify-between gap-4 rounded-2xl border border-electric-400/30 bg-gradient-to-r from-electric-500/10 to-cyan-500/[0.06] p-5 transition-all duration-200 hover:border-electric-400/60 hover:from-electric-500/15"
+        >
+          <div className="flex items-center gap-3.5">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-electric-500/15 text-electric-300">
+              <GraduationCap className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="font-display font-bold text-white">Take a full-length exam</p>
+              <p className="text-sm text-slate-400">
+                8 ready-made ACT &amp; SAT tests — timed and scored like the real thing, no wait.
+              </p>
+            </div>
+          </div>
+          <ArrowRight className="h-5 w-5 shrink-0 text-electric-300 transition-transform group-hover:translate-x-0.5" />
+        </Link>
       </div>
     </main>
   );
