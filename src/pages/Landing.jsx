@@ -16,7 +16,7 @@ import {
 const FEATURES = [
   {
     icon: Check,
-    title: "Double-checked by a second AI",
+    title: "Double-checked by a comprehensive AI system",
     body: "Every question is written by AI, then independently re-solved by a different AI model — and any answer the two disagree on is thrown out. You drill questions you can actually trust.",
   },
   {
@@ -48,7 +48,7 @@ const FEATURES = [
 
 const PREPNOVA_PERKS = [
   "8 full-length, timed practice exams",
-  "Every question verified by a second AI",
+  "All questions double-checked by a comprehensive AI system",
   "Real digital ACT & SAT format",
   "Updated as new official tests release",
   "Detailed explanation on every answer",
@@ -149,9 +149,9 @@ export default function Landing() {
               style={{ animationDelay: "160ms" }}
             >
               Unlimited ACT &amp; SAT practice in the real digital-test format —
-              every question double-checked by a second AI, plus eight
-              full-length timed exams and tutor-grade explanations. For less than
-              a dollar a day.
+              all questions double-checked by a comprehensive AI system, plus
+              eight full-length timed exams and tutor-grade explanations. For
+              less than a dollar a day.
             </p>
 
             <div
@@ -186,7 +186,7 @@ export default function Landing() {
         <div className="container-pn grid gap-8 py-12 sm:grid-cols-3">
           {[
             ["01", "Pick your test", "ACT or SAT — then call out your weakest subject."],
-            ["02", "Drill or sit an exam", "Targeted drills or a full-length timed exam — every question double-checked by a second AI."],
+            ["02", "Drill or sit an exam", "Targeted drills or a full-length timed exam — all questions double-checked by a comprehensive AI system."],
             ["03", "Watch it climb", "Every session is charted so progress is impossible to miss."],
           ].map(([num, title, body]) => (
             <div key={num} className="flex gap-4">
@@ -210,9 +210,9 @@ export default function Landing() {
               <span className="text-gradient">None of the invoice.</span>
             </h2>
             <p className="mt-4 text-slate-400">
-              PrepNova pairs AI generation with a second-AI accuracy check and
-              the structure of the real digital exams — so every question is
-              realistic, verified, and explained.
+              PrepNova pairs AI generation with a comprehensive AI accuracy
+              check and the structure of the real digital exams — so every
+              question is realistic, verified, and explained.
             </p>
           </div>
 
