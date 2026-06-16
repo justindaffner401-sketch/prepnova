@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Footer from "../components/Footer.jsx";
 import WhyUs from "../components/WhyUs.jsx";
 import FeatureBento from "../components/FeatureBento.jsx";
+import BlackHoleBackground from "../components/BlackHoleBackground.jsx";
 import { useReveal } from "../lib/useReveal.js";
 import { authEnabled } from "../lib/supabase.js";
 import { ArrowRight, Check, Sparkles } from "../components/icons.jsx";
@@ -95,26 +96,11 @@ export default function Landing() {
   return (
     <main>
       {/* ---------------- Hero ---------------- */}
-      <section className="relative overflow-hidden">
-        <div className="bg-grid absolute inset-0" aria-hidden="true" />
-        {/* Living aurora — drifting orbs */}
-        <div
-          className="glow-blob anim-drift -top-40 -left-24 h-80 w-80 bg-electric-600/30"
-          style={{ "--dx": "9%", "--dy": "7%" }}
-          aria-hidden="true"
-        />
-        <div
-          className="glow-blob anim-drift -top-24 right-[-8rem] h-96 w-96 bg-cyan-500/20"
-          style={{ "--dx": "-8%", "--dy": "6%", animationDelay: "-6s" }}
-          aria-hidden="true"
-        />
-        <div
-          className="glow-blob anim-drift bottom-[-6rem] left-1/3 h-72 w-72 bg-violet-500/15"
-          style={{ "--dx": "6%", "--dy": "-8%", animationDelay: "-12s" }}
-          aria-hidden="true"
-        />
+      <section className="relative flex min-h-screen items-center overflow-hidden">
+        {/* Full-bleed cinematic black-hole environment (video + overlays). */}
+        <BlackHoleBackground />
 
-        <div className="container-pn relative grid items-center gap-12 pt-32 pb-20 sm:pt-40 lg:grid-cols-2 lg:pb-28">
+        <div className="container-pn relative z-10 grid items-center gap-12 pt-32 pb-20 sm:pt-40 lg:grid-cols-2 lg:pb-28">
           <div>
             <span className="anim-fade-up inline-flex items-center gap-2 rounded-full border border-electric-400/30 bg-electric-500/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-electric-300">
               <Sparkles className="h-3.5 w-3.5" />

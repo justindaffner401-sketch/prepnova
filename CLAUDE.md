@@ -139,6 +139,21 @@ All custom CSS utilities live in `src/index.css`; **everything is disabled under
   early-returns when `document.hidden`. **R3F sizing gotcha:** inside a `fixed`, lazy-mounted parent
   R3F can mount at the default 300×150 and miss its measure — fixed by firing staggered
   `window.resize` events + a `ResizeObserver` on the wrapper in a mount effect.
+  - **Suppressed on the homepage:** `App.jsx` renders the 3D scene only when `pathname !== "/"`
+    (the landing hero has its own full-bleed video black hole, below). So the 3D scene is the
+    ambient background for `/select`, `/progress`, `/account`, etc. — not `/`.
+- **Cinematic video black-hole hero (DONE, live):** `src/components/BlackHoleBackground.jsx` +
+  `.blackhole-*` in `src/index.css`, mounted inside the **Landing hero** (`Landing.jsx`, hero is
+  `min-h-screen`, content lifted to `z-10`). Full-bleed looping `<video>` (`autoPlay muted loop
+  playsInline`, `webm`→`mp4` sources, `object-fit:cover`, `object-position:60% center`, darkened via
+  `filter: brightness(0.5)`) under dark navy gradients + vignette + left-headline darkening, with a
+  faint grid + starfield above the video and below content. **Reduced-motion:** the component skips
+  rendering `<video>` (JS `matchMedia`) and CSS swaps in a richer static cosmic gradient; without any
+  video file it falls back to an animated CSS accretion ring (`.blackhole-bg::before`). **Video asset
+  is committed at `public/videos/blackhole.mp4`** (~5.6 MB, AI-generated via Higgsfield Veo 3.1 Lite,
+  8s/720p, blue-cyan disk to match brand). `blackhole.webm` is optional (smaller; no ffmpeg locally
+  to make one — see `public/videos/README.md`); the `.webm` source 404s harmlessly and the browser
+  uses the mp4. To swap in a better/seamless clip, just replace the file(s).
   - **Off during timed tests:** `src/lib/focusMode.js` is a tiny `useSyncExternalStore` signal.
     `Practice.jsx` sets it true when `phase==="active"`; `Exam.jsx` when `phase==="active"||"break"`.
     `App.jsx` reads `useFocusMode()` and **unmounts** `<SpaceBackground/>` during a live test (frees

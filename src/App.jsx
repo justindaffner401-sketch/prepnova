@@ -26,13 +26,17 @@ export default function App() {
   // During an active timed test the 3D scene unmounts so nothing moves behind
   // the questions (the faint aurora stays as a calm base).
   const focusMode = useFocusMode();
+  const { pathname } = useLocation();
+  // The homepage hero has its own full-bleed cinematic black-hole background, so
+  // the app-wide 3D scene is suppressed there (no competing "tiny" black hole).
+  const showSpaceScene = !focusMode && pathname !== "/";
 
   return (
     <div className="min-h-screen">
       {/* Layered background: faint aurora nebula (-z-20) behind the live
           3D starfield + black hole (-z-10), over the navy <html> canvas. */}
       <AuroraBackground />
-      {!focusMode && (
+      {showSpaceScene && (
         <Suspense fallback={null}>
           <SpaceBackground />
         </Suspense>
