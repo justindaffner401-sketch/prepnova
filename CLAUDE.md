@@ -128,20 +128,15 @@ All custom CSS utilities live in `src/index.css`; **everything is disabled under
   **`<html>` canvas** (`@apply bg-navy-900`) and `<body>` is `background: transparent`. The aurora
   was then demoted to **`-z-20`** at low opacity to act as a faint nebula tint *behind* the 3D space
   scene (below).
-- **App-wide live 3D space background (DONE, live):** `src/components/SpaceBackground.jsx` —
-  react-three-fiber scene mounted app-wide in `App.jsx` (`fixed inset-0 -z-10`, **`React.lazy` +
-  Suspense** so the `three` chunk never blocks first paint). A brand-tinted **black hole**: event
-  horizon sphere + a custom GLSL **accretion-disk shader** (swirling plasma, radial heat falloff,
-  Doppler-bright side; additive blending) + a glow-halo plane, over a drifting drei `<Stars>`
-  field with subtle pointer parallax. Placement is via the `HOLE_POSITION/TILT/SCALE` consts
-  (upper-area so it never sits as a void behind text). **Perf/considerate:** capped `dpr [1,1.5]`,
-  no scene lights (basic/shader materials only), freezes under `prefers-reduced-motion`, useFrame
-  early-returns when `document.hidden`. **R3F sizing gotcha:** inside a `fixed`, lazy-mounted parent
-  R3F can mount at the default 300×150 and miss its measure — fixed by firing staggered
-  `window.resize` events + a `ResizeObserver` on the wrapper in a mount effect.
-  - **Suppressed on the homepage:** `App.jsx` renders the 3D scene only when `pathname !== "/"`
-    (the landing hero has its own full-bleed video black hole, below). So the 3D scene is the
-    ambient background for `/select`, `/progress`, `/account`, etc. — not `/`.
+- **App-wide live 3D space background (REMOVED for performance):** there used to be a
+  react-three-fiber black-hole + starfield (`SpaceBackground.jsx`) mounted app-wide. It ran a
+  continuous full-screen WebGL render loop on **every** page and pulled the ~888 KB `three` chunk on
+  every route — which made the whole app feel slow/janky on typical laptops (owner reported it).
+  **Removed** (along with the `focusMode` `useSyncExternalStore` signal that paused it during tests).
+  Interior pages now use **only the lightweight CSS aurora**; `three` loads **only on the homepage**
+  (via `Hero3D` + the hero video). The deleted component is in git history if a much lighter version
+  is ever wanted. **Lesson: don't run always-on WebGL app-wide — keep heavy visuals on the marketing
+  homepage, keep the study app light.**
 - **Cinematic video black-hole hero (DONE, live):** `src/components/BlackHoleBackground.jsx` +
   `.blackhole-*` in `src/index.css`, mounted inside the **Landing hero** (`Landing.jsx`, hero is
   `min-h-screen`, content lifted to `z-10`). Full-bleed looping `<video>` (`autoPlay muted loop
@@ -150,16 +145,12 @@ All custom CSS utilities live in `src/index.css`; **everything is disabled under
   faint grid + starfield above the video and below content. **Reduced-motion:** the component skips
   rendering `<video>` (JS `matchMedia`) and CSS swaps in a richer static cosmic gradient; without any
   video file it falls back to an animated CSS accretion ring (`.blackhole-bg::before`). **Video asset
-  is committed at `public/videos/blackhole.mp4`** (~5.6 MB, AI-generated via Higgsfield Veo 3.1 Lite,
-  8s/720p, blue-cyan disk to match brand). `blackhole.webm` is optional (smaller; no ffmpeg locally
-  to make one — see `public/videos/README.md`); the `.webm` source 404s harmlessly and the browser
-  uses the mp4. To swap in a better/seamless clip, just replace the file(s).
-  - **Off during timed tests:** `src/lib/focusMode.js` is a tiny `useSyncExternalStore` signal.
-    `Practice.jsx` sets it true when `phase==="active"`; `Exam.jsx` when `phase==="active"||"break"`.
-    `App.jsx` reads `useFocusMode()` and **unmounts** `<SpaceBackground/>` during a live test (frees
-    the WebGL context; the lazy chunk stays cached so it returns instantly after). The faint aurora
-    stays as a calm base. **Cost:** because it imports `three`, the ~888 KB (≈240 KB gz) three chunk
-    now lazy-loads on every non-test route (was landing-only).
+  is committed at `public/videos/blackhole.mp4`** (~2.8 MB, AI-generated via Higgsfield: a
+  `nano_banana_pro` still used as BOTH the start & end frame of a Veo 3.1 Lite 8s/720p clip → a
+  **seamless loop**; blue-cyan disk to match brand). True 15s needs a paid Higgsfield plan
+  (Kling/Cinema/Seedance are plan-gated). `blackhole.webm` is optional (smaller; no ffmpeg locally to
+  make one — see `public/videos/README.md`); the `.webm` source 404s harmlessly and the browser uses
+  the mp4. To swap in a better clip, just replace the file(s).
 
 ## Conventions / gotchas
 

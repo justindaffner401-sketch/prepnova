@@ -1,11 +1,7 @@
-import { Suspense, lazy, useEffect } from "react";
+import { useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import AuroraBackground from "./components/AuroraBackground.jsx";
 import Navbar from "./components/Navbar.jsx";
-import { useFocusMode } from "./lib/focusMode.js";
-
-// Heavy three.js scene — code-split so it never blocks first paint.
-const SpaceBackground = lazy(() => import("./components/SpaceBackground.jsx"));
 import Landing from "./pages/Landing.jsx";
 import SubjectSelect from "./pages/SubjectSelect.jsx";
 import Practice from "./pages/Practice.jsx";
@@ -23,24 +19,13 @@ function ScrollToTop() {
 }
 
 export default function App() {
-  // During an active timed test the 3D scene unmounts so nothing moves behind
-  // the questions (the faint aurora stays as a calm base).
-  const focusMode = useFocusMode();
-  const { pathname } = useLocation();
-  // The homepage hero has its own full-bleed cinematic black-hole background, so
-  // the app-wide 3D scene is suppressed there (no competing "tiny" black hole).
-  const showSpaceScene = !focusMode && pathname !== "/";
-
   return (
     <div className="min-h-screen">
-      {/* Layered background: faint aurora nebula (-z-20) behind the live
-          3D starfield + black hole (-z-10), over the navy <html> canvas. */}
+      {/* Lightweight CSS aurora app-wide. The homepage hero has its own
+          full-bleed cinematic video background (see Landing.jsx). We do NOT
+          run a live WebGL scene app-wide — a continuous 60fps render loop on
+          every page made the app feel slow/janky on most laptops. */}
       <AuroraBackground />
-      {showSpaceScene && (
-        <Suspense fallback={null}>
-          <SpaceBackground />
-        </Suspense>
-      )}
       <ScrollToTop />
       <Navbar />
       <Routes>

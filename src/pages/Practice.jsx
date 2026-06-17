@@ -23,7 +23,6 @@ import {
   saveResult,
   setStoredKey,
 } from "../lib/storage.js";
-import { setFocusMode } from "../lib/focusMode.js";
 import {
   AlertTriangle,
   ArrowRight,
@@ -144,12 +143,6 @@ export default function Practice() {
     savedRef.current = true;
     saveResult({ test, subject, score: resultScore, total: resultTotal, source });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
-
-  // Freeze the 3D background while a question set is actively being worked.
-  useEffect(() => {
-    setFocusMode(phase === "active");
-    return () => setFocusMode(false);
   }, [phase]);
 
   if (!valid) return null;
