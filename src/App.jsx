@@ -4,6 +4,7 @@ import AuroraBackground from "./components/AuroraBackground.jsx";
 import CookieConsent from "./components/CookieConsent.jsx";
 import ConsentedAnalytics from "./components/ConsentedAnalytics.jsx";
 import Navbar from "./components/Navbar.jsx";
+import Footer from "./components/Footer.jsx";
 import Landing from "./pages/Landing.jsx";
 import SubjectSelect from "./pages/SubjectSelect.jsx";
 import Practice from "./pages/Practice.jsx";
@@ -50,6 +51,10 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
+
+      {/* Global footer so legal links (Privacy/Terms/Cookie settings) are
+          reachable from every page, not just the homepage. */}
+      <Footer />
 
       {/* Non-essential analytics loads only after cookie consent. */}
       <CookieConsent />

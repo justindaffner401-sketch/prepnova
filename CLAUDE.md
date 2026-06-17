@@ -155,9 +155,11 @@ All custom CSS utilities live in `src/index.css`; **everything is disabled under
 ## Security & compliance (hardening pass)
 
 - **Headers:** `vercel.json` sets HSTS, `X-Content-Type-Options`, `X-Frame-Options: DENY`,
-  `Referrer-Policy`, `Permissions-Policy`, and a **`Content-Security-Policy-Report-Only`** (NOT
-  enforcing — so it can't break Stripe/Desmos/Supabase/fonts/video on the live site). **Manual:** after
-  verifying prod + watching the console, rename that header key to `Content-Security-Policy` to enforce.
+  `Referrer-Policy`, `Permissions-Policy`, and an **enforcing `Content-Security-Policy`** allowlisting
+  self + Google Fonts + Desmos (`*.desmos.com`) + Supabase + Vercel Analytics. `'unsafe-inline'` is
+  still required for styles/scripts (Vite bootstrap + Tailwind/React inline styles) — nonce-tightening
+  is a follow-up. **If a future external embed/script breaks, add its origin to the matching CSP
+  directive in `vercel.json`.**
 - **Rate limiting + validation:** `api/_security.js` (in-memory, per-instance, env-tunable —
   `RATE_LIMIT_GENERATE_MAX/_WINDOW_MS`, `RATE_LIMIT_BILLING_MAX/_WINDOW_MS`; recommend Upstash for a
   shared global limit). Applied to `generate-questions` (IP+user, 15/hr) and the billing endpoints
@@ -174,9 +176,12 @@ All custom CSS utilities live in `src/index.css`; **everything is disabled under
 - **Legal:** `/privacy` + `/terms` (`Privacy.jsx`/`Terms.jsx`) — plain-English templates with
   `[BRACKETED]` placeholders the owner must fill; linked in the footer. No compliance framework is
   claimed; student/minor data is flagged for legal review. See `docs/data-compliance.md`.
-- **A11y:** skip-to-content link (`.skip-link`) + `#main-content` target in `App.jsx`; footer is a
-  labelled `<nav>`; Account status messages are `role="alert"`. Animations already respect
-  `prefers-reduced-motion`; the aurora is now static.
+- **A11y:** skip-to-content link (`.skip-link`) + `#main-content` target in `App.jsx`; the `<Footer/>`
+  (a labelled `<nav>`) is rendered **globally in `App.jsx`** so legal links are on every page;
+  Account status messages are `role="alert"`. Animations respect `prefers-reduced-motion`; aurora is static.
+- **Tests:** `vitest` (`npm test`) — unit tests for the security helpers (`api/_security.test.js`:
+  rate limit, body/field/enum validation) and entitlement logic (`src/lib/entitlement.test.js`).
+  No DOM/integration tests yet (recommended follow-up).
 - **Confirmed clean:** no hardcoded secrets, no committed `.env`, no file uploads / storage buckets,
   no `innerHTML`/`dangerouslySetInnerHTML`; API routes derive `user.id` from the verified JWT (no
   IDOR), webhook verifies signatures, service-role key is server-only.

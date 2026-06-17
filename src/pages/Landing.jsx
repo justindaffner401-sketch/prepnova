@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import Footer from "../components/Footer.jsx";
 import WhyUs from "../components/WhyUs.jsx";
 import FeatureBento from "../components/FeatureBento.jsx";
 import BlackHoleBackground from "../components/BlackHoleBackground.jsx";
@@ -341,8 +340,6 @@ export default function Landing() {
           </div>
         </Reveal>
       </section>
-
-      <Footer />
     </main>
   );
 }
