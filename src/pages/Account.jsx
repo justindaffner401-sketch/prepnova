@@ -364,7 +364,7 @@ export default function Account() {
 
                 <div className="mt-6 space-y-3">
                   {/* Monthly with free trial */}
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+                  <div className="glow-card rounded-2xl border border-white/10 bg-white/[0.03] p-5">
                     <div className="flex items-baseline justify-between">
                       <span className="font-display font-bold text-white">Monthly</span>
                       <span>
@@ -386,7 +386,7 @@ export default function Account() {
                   </div>
 
                   {/* 1 Year — featured */}
-                  <div className="relative rounded-xl border border-electric-400/50 bg-gradient-to-b from-electric-500/15 to-cyan-400/5 p-5">
+                  <div className="glow-card relative rounded-2xl border border-electric-400/60 bg-gradient-to-b from-electric-500/20 to-cyan-400/[0.05] p-5 shadow-[0_0_45px_-12px_rgba(34,211,238,0.45)]">
                     <span className="absolute -top-2.5 right-4 rounded-full bg-gradient-to-r from-electric-500 to-cyan-400 px-2.5 py-0.5 font-display text-[10px] font-bold tracking-wide text-white">
                       BEST VALUE
                     </span>
@@ -412,7 +412,7 @@ export default function Account() {
                   </div>
 
                   {/* Lifetime */}
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+                  <div className="glow-card rounded-2xl border border-white/10 bg-white/[0.03] p-5">
                     <div className="flex items-baseline justify-between">
                       <span className="font-display font-bold text-white">Lifetime</span>
                       <span>

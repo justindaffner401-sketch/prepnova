@@ -232,7 +232,9 @@
   inset: 0;
   z-index: -1;
   border-radius: inherit;
-  background: radial-gradient(130% 90% at 50% -15%, rgb(34 211 238 / 0.16), transparent 62%);
+  /* Spotlight follows the cursor on desktop (vars set by CardSpotlight); falls
+     back to a fixed top glow when no pointer tracking (touch / no JS). */
+  background: radial-gradient(120% 80% at var(--spot-x, 50%) var(--spot-y, -15%), rgb(34 211 238 / 0.18), transparent 60%);
   opacity: 0;
   transition: opacity 0.35s ease;
   pointer-events: none;

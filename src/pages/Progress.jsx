@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import ScoreChart from "../components/ScoreChart.jsx";
+import ScoreRing from "../components/ScoreRing.jsx";
+import CountUp from "../components/CountUp.jsx";
 import { clearResults, getResults } from "../lib/storage.js";
 import {
   ArrowRight,
@@ -10,6 +12,17 @@ import {
 } from "../components/icons.jsx";
 
 const TEST_FILTERS = ["All", "ACT", "SAT"];
+
+const prefersReducedMotion =
+  typeof window !== "undefined" &&
+  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+// Tailwind gradient for a mastery bar, by score band.
+function masteryBar(avg) {
+  if (avg >= 80) return "from-emerald-500 to-teal-400";
+  if (avg >= 60) return "from-electric-500 to-cyan-400";
+  return "from-rose-500 to-amber-400";
+}
 
 export default function Progress() {
   const [results, setResults] = useState(() => getResults());
@@ -47,6 +60,19 @@ export default function Progress() {
       }))
       .sort((a, b) => b.avg - a.avg);
   }, [filtered]);
+
+  // Lowest-scoring subject (breakdown is sorted high→low) — the "focus area".
+  const weakest =
+    subjectBreakdown.length >= 2 ? subjectBreakdown[subjectBreakdown.length - 1] : null;
+
+  // Mastery bars fill from 0 the first time they render (skip under reduced motion).
+  const [barsReady, setBarsReady] = useState(prefersReducedMotion);
+  useEffect(() => {
+    if (prefersReducedMotion) return undefined;
+    setBarsReady(false);
+    const id = setTimeout(() => setBarsReady(true), 80);
+    return () => clearTimeout(id);
+  }, [filter, results]);
 
   function handleClear() {
     if (window.confirm("Delete all saved practice results? This can't be undone.")) {
@@ -108,21 +134,55 @@ export default function Progress() {
           </div>
         ) : (
           <>
-            {/* Stats */}
-            <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-              {[
-                ["Sessions", stats.sessions],
-                ["Questions answered", stats.totalQuestions],
-                ["Average score", `${stats.avg}%`],
-                ["Best session", `${stats.best}%`],
-              ].map(([label, value]) => (
-                <div key={label} className="glass p-5">
-                  <p className="text-xs font-medium tracking-wide text-slate-500">{label}</p>
-                  <p className="mt-1.5 font-display text-2xl font-extrabold text-white sm:text-3xl">
-                    {value}
-                  </p>
+            {/* Dashboard: animated score rings, key counts, and a focus area */}
+            <div className="glass mt-8 p-6 sm:p-8">
+              <div className="grid items-center gap-7 sm:grid-cols-2 lg:grid-cols-4">
+                <ScoreRing
+                  value={stats.avg}
+                  label="Average score"
+                  sublabel={`across ${stats.sessions} session${stats.sessions === 1 ? "" : "s"}`}
+                  id="ring-avg"
+                />
+                <ScoreRing value={stats.best} label="Best session" id="ring-best" />
+
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-1">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                    <p className="text-xs font-medium tracking-wide text-slate-500">Sessions</p>
+                    <p className="mt-1 font-display text-2xl font-extrabold text-white">
+                      <CountUp value={stats.sessions} />
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                    <p className="text-xs font-medium tracking-wide text-slate-500">Questions</p>
+                    <p className="mt-1 font-display text-2xl font-extrabold text-white">
+                      <CountUp value={stats.totalQuestions} />
+                    </p>
+                  </div>
                 </div>
-              ))}
+
+                {weakest ? (
+                  <Link
+                    to="/select"
+                    className="group flex h-full flex-col justify-center rounded-xl border border-amber-400/30 bg-amber-500/[0.07] p-4 transition-colors hover:bg-amber-500/[0.13]"
+                  >
+                    <p className="flex items-center gap-1.5 text-xs font-bold tracking-wide text-amber-300 uppercase">
+                      <Target className="h-3.5 w-3.5" /> Focus here
+                    </p>
+                    <p className="mt-1.5 font-display text-lg font-bold text-white">{weakest.subject}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-slate-400">
+                      Your weakest area at {weakest.avg}% — drill it{" "}
+                      <span className="font-semibold text-amber-300 group-hover:underline">→</span>
+                    </p>
+                  </Link>
+                ) : (
+                  <div className="flex h-full flex-col justify-center rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                    <p className="text-xs font-medium tracking-wide text-slate-500">Focus area</p>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-300">
+                      Practice a couple more subjects and your weakest area shows up here.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Chart */}
@@ -139,7 +199,7 @@ export default function Progress() {
             {/* Subject breakdown */}
             <div className="glass mt-5 p-5 sm:p-7">
               <h2 className="flex items-center gap-2 font-display font-bold text-white">
-                <Target className="h-4 w-4 text-electric-400" /> By subject
+                <Target className="h-4 w-4 text-electric-400" /> Subject mastery
               </h2>
               <div className="mt-5 space-y-4">
                 {subjectBreakdown.map((s) => (
@@ -153,10 +213,10 @@ export default function Progress() {
                       </span>
                       <span className="font-display font-bold text-white">{s.avg}%</span>
                     </div>
-                    <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/5">
+                    <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-white/5">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-electric-500 to-cyan-400 transition-all duration-700"
-                        style={{ width: `${s.avg}%` }}
+                        className={`h-full rounded-full bg-gradient-to-r ${masteryBar(s.avg)} transition-[width] duration-700 ease-out`}
+                        style={{ width: barsReady ? `${s.avg}%` : "0%" }}
                       />
                     </div>
                   </div>

@@ -1,5 +1,6 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import CountUp from "../components/CountUp.jsx";
 import WhyUs from "../components/WhyUs.jsx";
 import FeatureBento from "../components/FeatureBento.jsx";
 import BlackHoleBackground from "../components/BlackHoleBackground.jsx";
@@ -32,42 +33,91 @@ const PREPNOVA_PERKS = [
   "Cancel anytime",
 ];
 
+const heroReduceMotion =
+  typeof window !== "undefined" &&
+  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+// A few real-format questions the hero card cycles through (decorative).
+const HERO_QUESTIONS = [
+  {
+    tag: "ACT · Math",
+    num: 42,
+    q: "If 3x + 5 = 20, what is the value of x?",
+    choices: [["A", "3"], ["B", "5", true], ["C", "8"], ["D", "15"]],
+    note: "Correct — subtract 5, then divide by 3. Nice pacing.",
+  },
+  {
+    tag: "SAT · Math",
+    num: 18,
+    q: "A line passes through (0, 2) and (4, 10). What is its slope?",
+    choices: [["A", "1"], ["B", "2", true], ["C", "3"], ["D", "4"]],
+    note: "Slope = (10 − 2) / (4 − 0) = 2.",
+  },
+  {
+    tag: "ACT · English",
+    num: 7,
+    q: "The debate team celebrated ___ hard-won victory.",
+    choices: [["A", "there"], ["B", "their", true], ["C", "they're"], ["D", "theirs"]],
+    note: "“Their” shows possession — the team’s victory.",
+  },
+];
+
 function MockQuestionCard() {
+  const [i, setI] = useState(0);
+
+  // Cycle through the sample questions for a "live product" feel. Static for
+  // reduced-motion users. The card is aria-hidden, so screen readers aren't
+  // affected by the rotation.
+  useEffect(() => {
+    if (heroReduceMotion) return undefined;
+    const id = setInterval(() => setI((p) => (p + 1) % HERO_QUESTIONS.length), 4200);
+    return () => clearInterval(id);
+  }, []);
+
+  const qd = HERO_QUESTIONS[i];
+
   return (
     <div className="anim-float glass relative w-full max-w-sm p-5 shadow-2xl shadow-electric-500/10" aria-hidden="true">
-      <div className="flex items-center justify-between">
-        <span className="rounded-full border border-electric-400/30 bg-electric-500/10 px-3 py-1 text-xs font-semibold text-electric-300">
-          ACT · Math
-        </span>
-        <span className="grid h-10 w-10 place-items-center rounded-full border-2 border-electric-500/60 font-display text-sm font-bold text-electric-300">
-          42
-        </span>
+      <div key={i} className={heroReduceMotion ? "" : "anim-fade-up"}>
+        <div className="flex items-center justify-between">
+          <span className="rounded-full border border-electric-400/30 bg-electric-500/10 px-3 py-1 text-xs font-semibold text-electric-300">
+            {qd.tag}
+          </span>
+          <span className="grid h-10 w-10 place-items-center rounded-full border-2 border-electric-500/60 font-display text-sm font-bold text-electric-300">
+            {qd.num}
+          </span>
+        </div>
+        <p className="mt-4 min-h-[3.25rem] font-medium text-white">{qd.q}</p>
+        <div className="mt-3 space-y-2 text-sm">
+          {qd.choices.map(([label, text, correct]) => (
+            <div
+              key={label}
+              className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${
+                correct
+                  ? "border-emerald-400/60 bg-emerald-500/10 text-emerald-200"
+                  : "border-white/10 bg-white/5 text-slate-300"
+              }`}
+            >
+              <span className="font-display text-xs font-bold">{label}</span>
+              {text}
+              {correct && <Check className="ml-auto h-4 w-4" />}
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-emerald-300/90">{qd.note}</p>
       </div>
-      <p className="mt-4 font-medium text-white">If 3x + 5 = 20, what is the value of x?</p>
-      <div className="mt-4 space-y-2 text-sm">
-        {[
-          { label: "A", text: "3" },
-          { label: "B", text: "5", correct: true },
-          { label: "C", text: "8" },
-          { label: "D", text: "15" },
-        ].map((c) => (
-          <div
-            key={c.label}
-            className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${
-              c.correct
-                ? "border-emerald-400/60 bg-emerald-500/10 text-emerald-200"
-                : "border-white/10 bg-white/5 text-slate-300"
+
+      {/* Carousel position dots */}
+      <div className="mt-4 flex justify-center gap-1.5">
+        {HERO_QUESTIONS.map((_, d) => (
+          <span
+            key={d}
+            className={`h-1.5 rounded-full transition-all duration-300 ${
+              d === i ? "w-5 bg-electric-400" : "w-1.5 bg-white/20"
             }`}
-          >
-            <span className="font-display text-xs font-bold">{c.label}</span>
-            {c.text}
-            {c.correct && <Check className="ml-auto h-4 w-4" />}
-          </div>
+          />
         ))}
       </div>
-      <p className="mt-3 text-xs text-emerald-300/90">
-        Correct — subtract 5, divide by 3. Nice pacing.
-      </p>
     </div>
   );
 }
@@ -150,14 +200,16 @@ export default function Landing() {
               style={{ animationDelay: "400ms" }}
             >
               {[
-                ["8", "Full-length exams"],
-                ["∞", "Practice questions"],
-                ["2×", "AI-checked answers"],
-                ["<$1", "Per day"],
-              ].map(([n, l]) => (
-                <div key={l} className="glass glow-card px-3 py-3 text-center">
-                  <p className="font-display text-2xl font-extrabold text-gradient">{n}</p>
-                  <p className="mt-0.5 text-[11px] leading-tight text-slate-400">{l}</p>
+                { n: "8", num: 8, l: "Full-length exams" },
+                { n: "∞", l: "Practice questions" },
+                { n: "2×", l: "AI-checked answers" },
+                { n: "<$1", l: "Per day" },
+              ].map((s) => (
+                <div key={s.l} className="glass glow-card px-3 py-3 text-center">
+                  <p className="font-display text-2xl font-extrabold text-gradient">
+                    {s.num != null ? <CountUp value={s.num} /> : s.n}
+                  </p>
+                  <p className="mt-0.5 text-[11px] leading-tight text-slate-400">{s.l}</p>
                 </div>
               ))}
             </div>
