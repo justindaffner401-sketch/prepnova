@@ -36,6 +36,8 @@ export default function App() {
           run a live WebGL scene app-wide — a continuous 60fps render loop on
           every page made the app feel slow/janky on most laptops. */}
       <AuroraBackground />
+      {/* Cinematic film-grain texture over the whole UI (static, pointer-none). */}
+      <div className="grain" aria-hidden="true" />
       <ScrollToTop />
       <Navbar />
 

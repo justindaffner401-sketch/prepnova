@@ -60,8 +60,13 @@ export default function WhyUs() {
   const [barsRef, barsInView] = useInView();
 
   return (
-    <section id="why" className="scroll-mt-28 border-t border-white/5">
-      <div className="container-pn py-20 sm:py-24">
+    <section id="why" className="relative scroll-mt-28 overflow-hidden border-t border-white/5">
+      {/* Scantron / bubble-sheet texture, faded out toward the edges. */}
+      <div
+        className="bg-bubbles pointer-events-none absolute inset-0 opacity-70 [mask-image:radial-gradient(ellipse_75%_60%_at_50%_0%,black,transparent_75%)] [-webkit-mask-image:radial-gradient(ellipse_75%_60%_at_50%_0%,black,transparent_75%)]"
+        aria-hidden="true"
+      />
+      <div className="container-pn relative py-20 sm:py-24">
         <div className="mx-auto max-w-2xl text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-electric-400/30 bg-electric-500/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-electric-300">
             <Sparkles className="h-3.5 w-3.5" />
