@@ -155,11 +155,14 @@ All custom CSS utilities live in `src/index.css`; **everything is disabled under
 ## Security & compliance (hardening pass)
 
 - **Headers:** `vercel.json` sets HSTS, `X-Content-Type-Options`, `X-Frame-Options: DENY`,
-  `Referrer-Policy`, `Permissions-Policy`, and an **enforcing `Content-Security-Policy`** allowlisting
-  self + Google Fonts + Desmos (`*.desmos.com`) + Supabase + Vercel Analytics. `'unsafe-inline'` is
-  still required for styles/scripts (Vite bootstrap + Tailwind/React inline styles) — nonce-tightening
-  is a follow-up. **If a future external embed/script breaks, add its origin to the matching CSP
-  directive in `vercel.json`.**
+  `Referrer-Policy`, `Permissions-Policy`, and a **`Content-Security-Policy-Report-Only`** (NOT
+  enforcing). **Why report-only:** enforcing it blanked the Math page — Desmos needs `'unsafe-eval'`
+  + `'wasm-unsafe-eval'` + workers, which a strict CSP blocked, and the throw crashed React. The
+  report-only policy now includes those directives, so before flipping the key to
+  `Content-Security-Policy` you MUST verify the **Desmos calculator** + **Stripe checkout** still work.
+  Safety nets added regardless: `CalculatorWidget` wraps Desmos init in try/catch (failure → its own
+  error state), and an app-wide `ErrorBoundary` (`App.jsx`, keyed by route) shows a fallback instead
+  of a blank screen if any component throws.
 - **Rate limiting + validation:** `api/_security.js` (in-memory, per-instance, env-tunable —
   `RATE_LIMIT_GENERATE_MAX/_WINDOW_MS`, `RATE_LIMIT_BILLING_MAX/_WINDOW_MS`; recommend Upstash for a
   shared global limit). Applied to `generate-questions` (IP+user, 15/hr) and the billing endpoints

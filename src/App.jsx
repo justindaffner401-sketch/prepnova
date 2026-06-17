@@ -5,6 +5,7 @@ import CookieConsent from "./components/CookieConsent.jsx";
 import ConsentedAnalytics from "./components/ConsentedAnalytics.jsx";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import Landing from "./pages/Landing.jsx";
 import SubjectSelect from "./pages/SubjectSelect.jsx";
 import Practice from "./pages/Practice.jsx";
@@ -24,6 +25,7 @@ function ScrollToTop() {
 }
 
 export default function App() {
+  const { pathname } = useLocation();
   return (
     <div className="min-h-screen">
       {/* Keyboard users can jump straight past the nav to the page content. */}
@@ -38,7 +40,8 @@ export default function App() {
       <Navbar />
 
       <div id="main-content" tabIndex={-1}>
-        <Routes>
+        <ErrorBoundary key={pathname}>
+          <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/select" element={<SubjectSelect />} />
           <Route path="/practice" element={<Practice />} />
@@ -49,7 +52,8 @@ export default function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          </Routes>
+        </ErrorBoundary>
       </div>
 
       {/* Global footer so legal links (Privacy/Terms/Cookie settings) are

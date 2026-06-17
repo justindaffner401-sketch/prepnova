@@ -46,13 +46,20 @@ export default function CalculatorWidget() {
     );
   }, [open, status]);
 
-  // Mount the calculator once the script is ready.
+  // Mount the calculator once the script is ready. Wrapped in try/catch so a
+  // Desmos init failure (e.g. a strict CSP blocking its eval/worker) shows the
+  // widget's own error state instead of throwing and blanking the whole app.
   useEffect(() => {
     if (status !== "ready" || !mountRef.current || calcRef.current || !window.Desmos) return;
-    calcRef.current = window.Desmos.GraphingCalculator(mountRef.current, {
-      border: false,
-      lockViewport: false,
-    });
+    try {
+      calcRef.current = window.Desmos.GraphingCalculator(mountRef.current, {
+        border: false,
+        lockViewport: false,
+      });
+    } catch (err) {
+      console.error("Desmos init failed:", err);
+      setStatus("error");
+    }
   }, [status]);
 
   // Destroy only when leaving Math practice (the widget unmounts).
