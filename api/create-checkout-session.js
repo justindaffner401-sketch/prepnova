@@ -4,12 +4,31 @@
 
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { rateLimit, clientIp, envInt, checkBody, onlyAllowedKeys } from "./_security.js";
 
 const TRIAL_DAYS = 7;
+// Billing endpoints: default 30 requests per IP/user per hour (override via
+// RATE_LIMIT_BILLING_MAX / RATE_LIMIT_BILLING_WINDOW_MS).
+const BILLING_MAX = envInt("RATE_LIMIT_BILLING_MAX", 30);
+const BILLING_WINDOW_MS = envInt("RATE_LIMIT_BILLING_WINDOW_MS", 60 * 60 * 1000);
+
+function tooMany(res, retryAfter) {
+  res.setHeader("Retry-After", String(retryAfter));
+  return res.status(429).json({ error: "Too many requests — wait a moment and try again." });
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed." });
+  }
+
+  const ipLimit = rateLimit({ bucket: "billing-ip", identity: clientIp(req), limit: BILLING_MAX, windowMs: BILLING_WINDOW_MS });
+  if (ipLimit.limited) return tooMany(res, ipLimit.retryAfter);
+
+  const bodyErr = checkBody(req.body);
+  if (bodyErr) return res.status(400).json({ error: bodyErr });
+  if (!onlyAllowedKeys(req.body, ["plan"])) {
+    return res.status(400).json({ error: "Unexpected field in request." });
   }
 
   const {
@@ -50,6 +69,9 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Your session expired — sign in again." });
   }
   const user = userData.user;
+
+  const userLimit = rateLimit({ bucket: "billing-user", identity: user.id, limit: BILLING_MAX, windowMs: BILLING_WINDOW_MS });
+  if (userLimit.limited) return tooMany(res, userLimit.retryAfter);
 
   try {
     const stripe = new Stripe(STRIPE_SECRET_KEY);

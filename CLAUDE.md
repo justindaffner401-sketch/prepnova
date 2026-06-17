@@ -152,6 +152,35 @@ All custom CSS utilities live in `src/index.css`; **everything is disabled under
   make one — see `public/videos/README.md`); the `.webm` source 404s harmlessly and the browser uses
   the mp4. To swap in a better clip, just replace the file(s).
 
+## Security & compliance (hardening pass)
+
+- **Headers:** `vercel.json` sets HSTS, `X-Content-Type-Options`, `X-Frame-Options: DENY`,
+  `Referrer-Policy`, `Permissions-Policy`, and a **`Content-Security-Policy-Report-Only`** (NOT
+  enforcing — so it can't break Stripe/Desmos/Supabase/fonts/video on the live site). **Manual:** after
+  verifying prod + watching the console, rename that header key to `Content-Security-Policy` to enforce.
+- **Rate limiting + validation:** `api/_security.js` (in-memory, per-instance, env-tunable —
+  `RATE_LIMIT_GENERATE_MAX/_WINDOW_MS`, `RATE_LIMIT_BILLING_MAX/_WINDOW_MS`; recommend Upstash for a
+  shared global limit). Applied to `generate-questions` (IP+user, 15/hr) and the billing endpoints
+  (IP+user, 30/hr). Bodies are size-checked + unexpected fields rejected + enums allowlisted.
+- **RLS (MUST be applied manually):** `supabase/rls-policies.sql` enables RLS on `public.subscriptions`
+  with a `select` policy `auth.uid() = user_id` and **no** client write policies (writes are
+  service-role via the webhook, which bypasses RLS). The browser reads `subscriptions` directly with
+  the anon key (`useAuth.js`), so without RLS that table is readable by anyone — **run the SQL in the
+  Supabase SQL editor and confirm the RLS badge is ON.** Practice results live in `localStorage`, not
+  Supabase, so there's no results table to secure yet.
+- **Cookie consent:** `src/lib/cookieConsent.js` + `CookieConsent.jsx` + `ConsentedAnalytics.jsx`.
+  Vercel Analytics (cookieless) loads ONLY after Accept; "Cookie settings" in the footer re-opens the
+  banner. Essential = Supabase auth session (not gated).
+- **Legal:** `/privacy` + `/terms` (`Privacy.jsx`/`Terms.jsx`) — plain-English templates with
+  `[BRACKETED]` placeholders the owner must fill; linked in the footer. No compliance framework is
+  claimed; student/minor data is flagged for legal review. See `docs/data-compliance.md`.
+- **A11y:** skip-to-content link (`.skip-link`) + `#main-content` target in `App.jsx`; footer is a
+  labelled `<nav>`; Account status messages are `role="alert"`. Animations already respect
+  `prefers-reduced-motion`; the aurora is now static.
+- **Confirmed clean:** no hardcoded secrets, no committed `.env`, no file uploads / storage buckets,
+  no `innerHTML`/`dangerouslySetInnerHTML`; API routes derive `user.id` from the verified JWT (no
+  IDOR), webhook verifies signatures, service-role key is server-only.
+
 ## Conventions / gotchas
 
 - **Project path: `/Users/justindaffner/Desktop/Developer/prepnova`** (moved from `~/Developer` mid-build). Background Bash shells run in an isolated FS that can't see it — run builds/scripts in the FOREGROUND, and use `git -C <path>` (a `cd` into the path fails in the background shell).

@@ -32,6 +32,27 @@
     background: transparent;
   }
 
+  /* Accessibility: skip-to-content link — off-screen until keyboard-focused. */
+  .skip-link {
+    position: fixed;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 100;
+    transform: translateY(-160%);
+    transition: transform 0.15s ease;
+    border-radius: 0.5rem;
+    background: #2563eb;
+    color: #fff;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+  .skip-link:focus {
+    transform: translateY(0);
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+
   ::selection {
     background: rgb(59 130 246 / 0.35);
     color: #ffffff;

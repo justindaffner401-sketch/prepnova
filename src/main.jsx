@@ -1,15 +1,15 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import { Analytics } from "@vercel/analytics/react";
 import App from "./App.jsx";
 import "./index.css";
 
+// NOTE: Vercel Analytics is no longer mounted here unconditionally. It now loads
+// only after cookie consent, via <ConsentedAnalytics /> inside <App />.
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
       <App />
     </BrowserRouter>
-    <Analytics />
   </React.StrictMode>,
 );

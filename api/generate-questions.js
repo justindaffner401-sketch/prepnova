@@ -35,39 +35,29 @@ import {
   verifyReading,
   verifyWriting,
 } from "./_verify.js";
+import { rateLimit, clientIp, envInt, checkBody, onlyAllowedKeys } from "./_security.js";
 
 /* ---------------- Rate limiting ----------------
- * In-memory, per warm function instance. Counters aren't shared across
- * instances/regions and reset on cold starts, so this is abuse-blunting, not
- * a hard guarantee — pair it with a spend limit in the Anthropic console
- * (Settings → Limits). Every request counts, including invalid ones.
+ * Defaults: 15 requests per IP (and per user) per hour. Override with
+ * RATE_LIMIT_GENERATE_MAX / RATE_LIMIT_GENERATE_WINDOW_MS. In-memory + per
+ * instance (see api/_security.js) — pair with a spend limit in the Anthropic
+ * console for a hard cost ceiling, and Upstash for a shared global limit.
  */
-const RATE_LIMIT = 15; // requests per IP per window
-const WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const hits = new Map(); // ip -> array of request timestamps
+const GEN_MAX = envInt("RATE_LIMIT_GENERATE_MAX", 15);
+const GEN_WINDOW_MS = envInt("RATE_LIMIT_GENERATE_WINDOW_MS", 60 * 60 * 1000);
 
-function clientIp(req) {
-  const fwd = req.headers["x-forwarded-for"];
-  if (typeof fwd === "string" && fwd.length > 0) return fwd.split(",")[0].trim();
-  return req.headers["x-real-ip"] || req.socket?.remoteAddress || "unknown";
-}
+// Generation is the most expensive (and abuse-prone) endpoint, so inputs are
+// validated against allowlists before any model call.
+const ALLOWED_KEYS = ["test", "subject", "mode", "count", "variant"];
+const ALLOWED_MODES = ["passage", "reading", "writing"];
+const ALLOWED_VARIANTS = ["single", "paired", "graph"];
 
-function isRateLimited(ip) {
-  const now = Date.now();
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
-  if (recent.length >= RATE_LIMIT) {
-    hits.set(ip, recent);
-    return true;
-  }
-  recent.push(now);
-  hits.set(ip, recent);
-  if (hits.size > 5000) {
-    // Drop fully-expired entries so the map can't grow without bound.
-    for (const [key, stamps] of hits) {
-      if (stamps.every((t) => now - t >= WINDOW_MS)) hits.delete(key);
-    }
-  }
-  return false;
+function tooMany(res, retryAfter) {
+  res.setHeader("Retry-After", String(retryAfter));
+  return res.status(429).json({
+    error:
+      "You've hit the practice limit for this hour. Take a breather and come back soon — or run the built-in sample set.",
+  });
 }
 
 export default async function handler(req, res) {
@@ -75,18 +65,23 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed." });
   }
 
-  if (isRateLimited(clientIp(req))) {
-    return res.status(429).json({
-      error:
-        "You've hit the practice limit for this hour. Take a breather and come back soon — or run the built-in sample set.",
-    });
-  }
+  // IP-based limit first — protects even before we know who's calling.
+  const ip = clientIp(req);
+  const ipLimit = rateLimit({ bucket: "gen-ip", identity: ip, limit: GEN_MAX, windowMs: GEN_WINDOW_MS });
+  if (ipLimit.limited) return tooMany(res, ipLimit.retryAfter);
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return res.status(503).json({
       error:
         "AI generation isn't configured on this deployment yet. Site owner: set ANTHROPIC_API_KEY in Vercel → Project → Settings → Environment Variables, then redeploy.",
     });
+  }
+
+  // Reject malformed/oversized bodies and unexpected fields up front.
+  const bodyErr = checkBody(req.body);
+  if (bodyErr) return res.status(400).json({ error: bodyErr });
+  if (!onlyAllowedKeys(req.body, ALLOWED_KEYS)) {
+    return res.status(400).json({ error: "Unexpected field in request." });
   }
 
   /* ---------------- Subscription gate ----------------
@@ -109,6 +104,15 @@ export default async function handler(req, res) {
     if (authError || !userData?.user) {
       return res.status(401).json({ error: "Your session expired — sign in again." });
     }
+    // Per-user limit on top of per-IP, so one account can't fan out over many IPs.
+    const userLimit = rateLimit({
+      bucket: "gen-user",
+      identity: userData.user.id,
+      limit: GEN_MAX,
+      windowMs: GEN_WINDOW_MS,
+    });
+    if (userLimit.limited) return tooMany(res, userLimit.retryAfter);
+
     const { data: sub } = await supabase
       .from("subscriptions")
       .select("status, current_period_end")
@@ -126,6 +130,12 @@ export default async function handler(req, res) {
   if (!VALID_TESTS.includes(test) || !VALID_SUBJECTS.includes(subject)) {
     return res.status(400).json({ error: "Invalid test or subject." });
   }
+  if (mode !== undefined && !ALLOWED_MODES.includes(mode)) {
+    return res.status(400).json({ error: "Invalid mode." });
+  }
+  if (reqVariant !== undefined && !ALLOWED_VARIANTS.includes(reqVariant)) {
+    return res.status(400).json({ error: "Invalid variant." });
+  }
   // Section assembly may request a larger MCQ batch (capped at 12).
   const requested = Number.isInteger(req.body?.count)
     ? Math.min(12, Math.max(5, req.body.count))
@@ -142,7 +152,7 @@ export default async function handler(req, res) {
 
   // Reading uses a requested variant (section assembly) when valid, else random.
   const readingVariant = reading
-    ? ["single", "paired", "graph"].includes(reqVariant)
+    ? ALLOWED_VARIANTS.includes(reqVariant)
       ? reqVariant
       : chooseReadingVariant()
     : null;

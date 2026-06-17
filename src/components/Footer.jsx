@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import Logo from "./Logo.jsx";
+import { resetConsent } from "../lib/cookieConsent.js";
 
 export default function Footer() {
   return (
@@ -13,7 +14,7 @@ export default function Footer() {
           </p>
         </div>
 
-        <div className="flex gap-16">
+        <nav aria-label="Footer" className="flex flex-wrap gap-12 sm:gap-16">
           <div className="space-y-3">
             <p className="font-display text-xs font-bold uppercase tracking-widest text-slate-500">
               Product
@@ -48,7 +49,40 @@ export default function Footer() {
               </li>
             </ul>
           </div>
-        </div>
+          <div className="space-y-3">
+            <p className="font-display text-xs font-bold uppercase tracking-widest text-slate-500">
+              Legal
+            </p>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link to="/privacy" className="text-slate-400 hover:text-white">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms" className="text-slate-400 hover:text-white">
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                {/* Re-opens the cookie banner so users can change their choice. */}
+                <button
+                  type="button"
+                  onClick={resetConsent}
+                  className="text-slate-400 hover:text-white"
+                >
+                  Cookie settings
+                </button>
+              </li>
+              <li>
+                {/* TODO: replace with your real support address. */}
+                <a href="mailto:[CONTACT EMAIL]" className="text-slate-400 hover:text-white">
+                  Contact
+                </a>
+              </li>
+            </ul>
+          </div>
+        </nav>
       </div>
       <div className="border-t border-white/5 py-5 text-center text-xs text-slate-500">
         © {new Date().getFullYear()} PrepNova · prepnovaai.com · Your Score. Elevated.

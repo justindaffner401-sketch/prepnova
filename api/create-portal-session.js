@@ -2,11 +2,23 @@
 
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { rateLimit, clientIp, envInt } from "./_security.js";
+
+const BILLING_MAX = envInt("RATE_LIMIT_BILLING_MAX", 30);
+const BILLING_WINDOW_MS = envInt("RATE_LIMIT_BILLING_WINDOW_MS", 60 * 60 * 1000);
+
+function tooMany(res, retryAfter) {
+  res.setHeader("Retry-After", String(retryAfter));
+  return res.status(429).json({ error: "Too many requests — wait a moment and try again." });
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed." });
   }
+
+  const ipLimit = rateLimit({ bucket: "billing-ip", identity: clientIp(req), limit: BILLING_MAX, windowMs: BILLING_WINDOW_MS });
+  if (ipLimit.limited) return tooMany(res, ipLimit.retryAfter);
 
   const { STRIPE_SECRET_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
   if (!STRIPE_SECRET_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -25,6 +37,9 @@ export default async function handler(req, res) {
   if (authError || !userData?.user) {
     return res.status(401).json({ error: "Your session expired — sign in again." });
   }
+
+  const userLimit = rateLimit({ bucket: "billing-user", identity: userData.user.id, limit: BILLING_MAX, windowMs: BILLING_WINDOW_MS });
+  if (userLimit.limited) return tooMany(res, userLimit.retryAfter);
 
   const { data: subRow } = await supabase
     .from("subscriptions")

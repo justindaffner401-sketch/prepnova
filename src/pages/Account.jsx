@@ -209,6 +209,8 @@ export default function Account() {
 
         {message && (
           <div
+            role="alert"
+            aria-live="assertive"
             className={`anim-fade-up mb-4 rounded-xl border px-4 py-3 text-sm font-medium ${
               message.kind === "error"
                 ? "border-rose-400/40 bg-rose-500/10 text-rose-300"
