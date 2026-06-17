@@ -75,8 +75,7 @@ export default function Footer() {
                 </button>
               </li>
               <li>
-                {/* TODO: replace with your real support address. */}
-                <a href="mailto:[CONTACT EMAIL]" className="text-slate-400 hover:text-white">
+                <a href="mailto:justindaffner@icloud.com" className="text-slate-400 hover:text-white">
                   Contact
                 </a>
               </li>

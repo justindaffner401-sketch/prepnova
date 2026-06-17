@@ -37,7 +37,7 @@ preventing abuse, and basic product analytics.
 ## Retention & deletion
 - Account/subscription data: kept while active + as needed for tax/legal. **[CONFIRM PERIOD]**
 - Browser practice data: until the user clears browser storage.
-- **Deletion requests:** users email **[CONTACT EMAIL]**; this is documented in the Privacy Policy.
+- **Deletion requests:** users email **justindaffner@icloud.com**; this is documented in the Privacy Policy.
   Manual process today (delete the Supabase auth user + their `subscriptions` row,
   and cancel any active Stripe subscription). **[CONFIRM / consider a self-serve flow later]**
 - Export: no automated export today. **[CONFIRM if needed for your jurisdiction]**

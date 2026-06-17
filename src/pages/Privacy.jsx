@@ -2,8 +2,9 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
 // Plain-English privacy policy. Content reflects what the app ACTUALLY does
-// today (see /docs/data-compliance.md). [BRACKETED] items are placeholders the
-// site owner must fill in. This is NOT legal advice — see the disclaimer below.
+// today (see /docs/data-compliance.md). Operator name, contact email, dates,
+// and jurisdiction are filled with the owner's current details (editable).
+// This is NOT legal advice — see the disclaimer below.
 export default function Privacy() {
   useEffect(() => {
     document.title = "PrepNova — Privacy Policy";
@@ -13,14 +14,14 @@ export default function Privacy() {
     <main className="container-pn max-w-3xl pt-28 pb-20 sm:pt-36">
       <h1 className="font-display text-4xl font-extrabold text-white">Privacy Policy</h1>
       <p className="mt-2 text-sm text-slate-500">
-        Effective date: <strong>[EFFECTIVE DATE]</strong> · Last updated: <strong>[LAST UPDATED DATE]</strong>
+        Effective date: <strong>June 16, 2026</strong> · Last updated: <strong>June 16, 2026</strong>
       </p>
 
       <div className="prose-pn mt-8 space-y-6 text-sm leading-relaxed text-slate-300">
         <p>
-          This Privacy Policy explains how <strong>[COMPANY / OPERATOR LEGAL NAME]</strong> ("we,"
+          This Privacy Policy explains how <strong>PrepNova</strong> ("we,"
           "us") collects, uses, and protects information when you use PrepNova at prepnovaai.com (the
-          "Service"). Questions? Contact <strong>[CONTACT EMAIL]</strong>.
+          "Service"). Questions? Contact <strong>justindaffner@icloud.com</strong>.
         </p>
 
         <h2 className="font-display text-xl font-bold text-white">Information we collect</h2>
@@ -54,14 +55,14 @@ export default function Privacy() {
         </p>
 
         <h2 className="font-display text-xl font-bold text-white">Data retention</h2>
-        <p>We keep account and subscription records while your account is active and as needed for legal, tax, and accounting purposes. Browser-stored practice data stays until you clear it. <strong>[CONFIRM RETENTION PERIODS]</strong></p>
+        <p>We keep account and subscription records while your account is active and as needed for legal, tax, and accounting purposes. Browser-stored practice data stays on your device until you clear it.</p>
 
         <h2 className="font-display text-xl font-bold text-white">Your rights &amp; data deletion</h2>
         <p>
           You may request access to, correction of, or deletion of your personal data by emailing{" "}
-          <strong>[CONTACT EMAIL]</strong>. To delete browser-stored practice data, clear your
+          <strong>justindaffner@icloud.com</strong>. To delete browser-stored practice data, clear your
           browser storage for this site. Depending on where you live, you may have additional rights
-          under applicable law. <strong>[CONFIRM APPLICABLE RIGHTS / PROCESS]</strong>
+          under applicable law, and we'll respond to verified requests as required.
         </p>
 
         <h2 className="font-display text-xl font-bold text-white">Security</h2>
@@ -71,7 +72,7 @@ export default function Privacy() {
         <p>
           PrepNova is test-prep for the ACT &amp; SAT and may be used by people under 18. We do not
           knowingly collect more data than described above. If you are a parent/guardian with
-          questions or requests, contact <strong>[CONTACT EMAIL]</strong>. Laws such as COPPA, FERPA,
+          questions or requests, contact <strong>justindaffner@icloud.com</strong>. Laws such as COPPA, FERPA,
           GDPR, and U.S. state privacy laws may apply depending on your users and location —{" "}
           <strong>we have not certified compliance with any specific framework here, and legal review
           is recommended before relying on this section.</strong>
@@ -83,7 +84,7 @@ export default function Privacy() {
         <p className="rounded-xl border border-amber-400/30 bg-amber-500/5 p-4 text-amber-200/90">
           <strong>Disclaimer:</strong> this template is provided for convenience and is{" "}
           <strong>not legal advice</strong>. Have it reviewed by a qualified attorney before
-          publishing — especially regarding minors/student data. <strong>[LEGAL REVIEW STATUS]</strong>
+          publishing — especially regarding minors/student data. <strong>This policy has not yet been reviewed by an attorney.</strong>
         </p>
 
         <p className="text-slate-400">

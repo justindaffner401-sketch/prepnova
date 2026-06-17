@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
-// Plain-English Terms of Service. [BRACKETED] items are placeholders the site
-// owner must fill in. NOT legal advice — see the disclaimer at the bottom.
+// Plain-English Terms of Service. Operator name, contact email, dates,
+// jurisdiction, and policy specifics are filled with the owner's current
+// details (editable). NOT legal advice — see the disclaimer at the bottom.
 export default function Terms() {
   useEffect(() => {
     document.title = "PrepNova — Terms of Service";
@@ -12,24 +13,24 @@ export default function Terms() {
     <main className="container-pn max-w-3xl pt-28 pb-20 sm:pt-36">
       <h1 className="font-display text-4xl font-extrabold text-white">Terms of Service</h1>
       <p className="mt-2 text-sm text-slate-500">
-        Effective date: <strong>[EFFECTIVE DATE]</strong> · Last updated: <strong>[LAST UPDATED DATE]</strong>
+        Effective date: <strong>June 16, 2026</strong> · Last updated: <strong>June 16, 2026</strong>
       </p>
 
       <div className="prose-pn mt-8 space-y-6 text-sm leading-relaxed text-slate-300">
         <p>
           These Terms govern your use of PrepNova at prepnovaai.com (the "Service"), operated by{" "}
-          <strong>[COMPANY / OPERATOR LEGAL NAME]</strong> ("we," "us"). By using the Service you
-          agree to these Terms. Questions? Contact <strong>[CONTACT EMAIL]</strong>.
+          <strong>PrepNova</strong> ("we," "us"). By using the Service you
+          agree to these Terms. Questions? Contact <strong>justindaffner@icloud.com</strong>.
         </p>
 
         <h2 className="font-display text-xl font-bold text-white">1. The Service</h2>
         <p>PrepNova provides AI-generated ACT &amp; SAT practice questions, full-length practice exams, explanations, and progress tracking. Features and pricing may change over time.</p>
 
         <h2 className="font-display text-xl font-bold text-white">2. Accounts</h2>
-        <p>You're responsible for the accuracy of your account information, for keeping your password secure, and for activity under your account. You must be old enough to form a binding contract, or have a parent/guardian's permission. <strong>[CONFIRM MINIMUM AGE / PARENTAL CONSENT]</strong></p>
+        <p>You're responsible for the accuracy of your account information, for keeping your password secure, and for activity under your account. You must be old enough to form a binding contract, or have a parent/guardian's permission. You must be at least 13 to use the Service, and if you are under 18 you must have a parent or guardian's permission.</p>
 
         <h2 className="font-display text-xl font-bold text-white">3. Subscriptions &amp; payments</h2>
-        <p>Paid plans are billed through our payment processor (Stripe). Trials, renewals, and cancellation terms are shown at checkout and on your account page. <strong>[CONFIRM REFUND / CANCELLATION POLICY]</strong></p>
+        <p>Paid plans are billed through our payment processor (Stripe). Trials, renewals, and cancellation terms are shown at checkout and on your account page. You can cancel anytime. The monthly plan includes a 7-day free trial; we do not provide refunds for partial billing periods, and the 1-Year and Lifetime plans are non-refundable once purchased, except where a refund is required by law.</p>
 
         <h2 className="font-display text-xl font-bold text-white">4. Acceptable use</h2>
         <p>Don't misuse the Service, including: attempting to break security or rate limits, scraping or bulk-extracting content, reselling or redistributing generated questions, reverse-engineering the Service, or using it for unlawful purposes.</p>
@@ -48,7 +49,7 @@ export default function Terms() {
         </p>
 
         <h2 className="font-display text-xl font-bold text-white">7. Disclaimers &amp; limitation of liability</h2>
-        <p>The Service is provided "as is" without warranties of any kind to the fullest extent permitted by law. To the extent permitted by law, our total liability is limited, and we are not liable for indirect or consequential damages. <strong>[CONFIRM LIABILITY CAP / JURISDICTION-SPECIFIC LANGUAGE]</strong></p>
+        <p>The Service is provided "as is" without warranties of any kind to the fullest extent permitted by law. To the extent permitted by law, our total liability is limited, and we are not liable for indirect or consequential damages. Our total liability for any claim relating to the Service will not exceed the amount you paid us in the 12 months before the claim.</p>
 
         <h2 className="font-display text-xl font-bold text-white">8. Termination</h2>
         <p>You may stop using the Service anytime. We may suspend or terminate access for violations of these Terms or to protect the Service. You can request account deletion per our <Link to="/privacy" className="text-electric-300 underline underline-offset-2">Privacy Policy</Link>.</p>
@@ -57,12 +58,12 @@ export default function Terms() {
         <p>We may update these Terms; we'll revise the "Last updated" date. Continued use after changes means you accept the updated Terms.</p>
 
         <h2 className="font-display text-xl font-bold text-white">10. Governing law</h2>
-        <p>These Terms are governed by the laws of <strong>[GOVERNING JURISDICTION]</strong>, without regard to conflict-of-laws rules. <strong>[CONFIRM DISPUTE RESOLUTION / VENUE]</strong></p>
+        <p>These Terms are governed by the laws of the State of <strong>West Virginia</strong>, United States, without regard to conflict-of-laws rules. Any dispute will be brought exclusively in the state or federal courts located in West Virginia.</p>
 
         <p className="rounded-xl border border-amber-400/30 bg-amber-500/5 p-4 text-amber-200/90">
           <strong>Disclaimer:</strong> this template is provided for convenience and is{" "}
           <strong>not legal advice</strong>. Have it reviewed by a qualified attorney before
-          publishing. <strong>[LEGAL REVIEW STATUS]</strong>
+          publishing. <strong>These Terms have not yet been reviewed by an attorney.</strong>
         </p>
       </div>
     </main>
