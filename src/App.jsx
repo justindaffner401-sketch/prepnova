@@ -16,6 +16,8 @@ import Account from "./pages/Account.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import Privacy from "./pages/Privacy.jsx";
 import Terms from "./pages/Terms.jsx";
+import FreePractice from "./pages/FreePractice.jsx";
+import Diagnostic from "./pages/Diagnostic.jsx";
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
@@ -56,6 +58,9 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/free-act-practice" element={<FreePractice test="ACT" />} />
+          <Route path="/free-sat-practice" element={<FreePractice test="SAT" />} />
+          <Route path="/diagnostic" element={<Diagnostic />} />
           <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </ErrorBoundary>

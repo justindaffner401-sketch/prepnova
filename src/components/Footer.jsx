@@ -30,6 +30,21 @@ export default function Footer() {
                   Pricing
                 </Link>
               </li>
+              <li>
+                <Link to="/diagnostic" className="text-slate-400 hover:text-white">
+                  Free diagnostic
+                </Link>
+              </li>
+              <li>
+                <Link to="/free-act-practice" className="text-slate-400 hover:text-white">
+                  Free ACT practice
+                </Link>
+              </li>
+              <li>
+                <Link to="/free-sat-practice" className="text-slate-400 hover:text-white">
+                  Free SAT practice
+                </Link>
+              </li>
             </ul>
           </div>
           <div className="space-y-3">
