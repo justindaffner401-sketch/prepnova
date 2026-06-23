@@ -10,6 +10,7 @@ import {
   Check,
   Sparkles,
 } from "../components/icons.jsx";
+import { trackEvent } from "../lib/analytics.js";
 
 const PERKS = [
   "Unlimited AI-generated questions",
@@ -49,6 +50,11 @@ export default function Account() {
   useEffect(() => {
     document.title = "PrepNova — Account";
   }, []);
+
+  // Funnel: signed in, not yet Pro → they're looking at the paywall.
+  useEffect(() => {
+    if (!loading && user && !subscribed) trackEvent("paywall_viewed");
+  }, [loading, user, subscribed]);
 
   // After returning from Stripe Checkout the webhook may lag a moment —
   // poll the subscription a few times so the page flips to Pro on its own.
@@ -93,6 +99,7 @@ export default function Account() {
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
+        trackEvent("signup_success");
         if (!data.session) {
           setMessage({
             kind: "info",
@@ -114,6 +121,7 @@ export default function Account() {
   async function startCheckout(plan) {
     setBusy(true);
     setMessage(null);
+    trackEvent("checkout_started", { plan });
     try {
       await callBilling("/api/create-checkout-session", session.access_token, { plan });
     } catch (err) {

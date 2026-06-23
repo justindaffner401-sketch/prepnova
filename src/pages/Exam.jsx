@@ -7,6 +7,7 @@ import { getApiKey, saveResult } from "../lib/storage.js";
 import { authEnabled } from "../lib/supabase.js";
 import { useAuth } from "../lib/useAuth.js";
 import { ArrowRight, Bolt, Check, Clock, RotateCcw, Sparkles } from "../components/icons.jsx";
+import { trackEvent } from "../lib/analytics.js";
 
 const TESTS = ["ACT", "SAT"];
 const sectionsForTest = (test) => Object.keys(SECTION_PLANS).filter((k) => k.startsWith(`${test}-`));
@@ -83,6 +84,7 @@ export default function Exam() {
 
   // Begin running a queue from index 0.
   function beginQueue(queue, label) {
+    trackEvent("exam_started", { test, label, sections: queue.length });
     setRunQueue(queue);
     setRunLabel(label);
     setQueueIndex(0);

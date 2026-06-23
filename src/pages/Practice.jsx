@@ -23,6 +23,7 @@ import {
   saveResult,
   setStoredKey,
 } from "../lib/storage.js";
+import { trackEvent } from "../lib/analytics.js";
 import {
   AlertTriangle,
   ArrowRight,
@@ -142,6 +143,18 @@ export default function Practice() {
     if (phase !== "done" || savedRef.current || resultTotal === 0) return;
     savedRef.current = true;
     saveResult({ test, subject, score: resultScore, total: resultTotal, source });
+    trackEvent("practice_completed", {
+      test,
+      subject,
+      percent: Math.round((resultScore / resultTotal) * 100),
+      source: source || "unknown",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  // Funnel: fire once when a session actually starts (covers every mode).
+  useEffect(() => {
+    if (phase === "active") trackEvent("practice_started", { test, subject });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
