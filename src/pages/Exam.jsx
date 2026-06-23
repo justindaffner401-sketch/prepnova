@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import SectionRunner from "../components/SectionRunner.jsx";
 import { assembleSection } from "../lib/section.js";
-import { SECTION_PLANS, EXAM_SECTIONS } from "../lib/sectionPlans.js";
+import { SECTION_PLANS } from "../lib/sectionPlans.js";
 import { getApiKey, saveResult } from "../lib/storage.js";
 import { authEnabled } from "../lib/supabase.js";
 import { useAuth } from "../lib/useAuth.js";
@@ -20,7 +20,6 @@ export default function Exam() {
   // "setup" | "loading" | "active" | "break" | "done" | "error"
   const [phase, setPhase] = useState("setup");
   const [test, setTest] = useState("ACT");
-  const [mode, setMode] = useState("section"); // "section" | "exam"
   const [sectionKey, setSectionKey] = useState("ACT-English");
   const [minutes, setMinutes] = useState(SECTION_PLANS["ACT-English"].minutes);
 
@@ -104,16 +103,6 @@ export default function Exam() {
   function startSectionRun() {
     const plan = SECTION_PLANS[sectionKey];
     beginQueue([{ planKey: sectionKey, label: plan.label, test: plan.test, minutes, units: null }], plan.label);
-  }
-  function startExamRun() {
-    const queue = EXAM_SECTIONS[test].map((k) => ({
-      planKey: k,
-      label: SECTION_PLANS[k].label,
-      test,
-      minutes: SECTION_PLANS[k].minutes,
-      units: null,
-    }));
-    beginQueue(queue, `${test} full exam`);
   }
   async function startPrebuilt(summary) {
     setPhase("loading");
@@ -232,33 +221,11 @@ export default function Exam() {
               </div>
             )}
 
-            {/* Generate fresh */}
+            {/* Generate one section fresh */}
             <p className="mt-6 text-xs font-semibold tracking-widest text-slate-500 uppercase">
-              Or generate fresh
+              Or generate one section fresh
             </p>
-            <div className="mt-2 flex gap-2">
-              {[
-                ["section", "One section"],
-                ["exam", "Full exam"],
-              ].map(([m, label]) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setMode(m)}
-                  className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${
-                    mode === m
-                      ? "border-electric-400/70 bg-electric-500/10 text-white"
-                      : "border-white/10 bg-white/5 text-slate-300 hover:border-electric-400/40"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            {mode === "section" && (
-              <>
-                <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="mt-3 grid grid-cols-2 gap-2">
                   {sectionsForTest(test).map((key) => {
                     const plan = SECTION_PLANS[key];
                     return (
@@ -313,18 +280,16 @@ export default function Exam() {
                     min
                   </label>
                 </div>
-              </>
-            )}
 
             <div className="mt-6 border-t border-white/10 pt-5">
               {aiAvailable ? (
                 <button
                   type="button"
-                  onClick={mode === "exam" ? startExamRun : startSectionRun}
+                  onClick={startSectionRun}
                   className="btn-primary w-full"
                 >
                   <Bolt className="h-4 w-4" />
-                  {mode === "exam" ? "Generate full exam" : "Generate section"}
+                  Generate section
                 </button>
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-3">
