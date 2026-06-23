@@ -24,6 +24,7 @@ import {
   setStoredKey,
 } from "../lib/storage.js";
 import { trackEvent } from "../lib/analytics.js";
+import ShareScoreButton from "../components/ShareScoreButton.jsx";
 import {
   AlertTriangle,
   ArrowRight,
@@ -758,6 +759,13 @@ export default function Practice() {
                 <RotateCcw className="h-4 w-4" />
                 New questions
               </button>
+              <ShareScoreButton
+                percent={Math.round((resultScore / resultTotal) * 100)}
+                test={test}
+                subjectLabel={subject}
+                score={resultScore}
+                total={resultTotal}
+              />
               <Link to="/select" className="btn-ghost">
                 Change subject
               </Link>

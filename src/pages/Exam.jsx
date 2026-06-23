@@ -8,6 +8,7 @@ import { authEnabled } from "../lib/supabase.js";
 import { useAuth } from "../lib/useAuth.js";
 import { ArrowRight, Bolt, Check, Clock, RotateCcw, Sparkles } from "../components/icons.jsx";
 import { trackEvent } from "../lib/analytics.js";
+import ShareScoreButton from "../components/ShareScoreButton.jsx";
 
 const TESTS = ["ACT", "SAT"];
 const sectionsForTest = (test) => Object.keys(SECTION_PLANS).filter((k) => k.startsWith(`${test}-`));
@@ -413,6 +414,13 @@ export default function Exam() {
               <button type="button" onClick={() => setPhase("setup")} className="btn-primary">
                 <RotateCcw className="h-4 w-4" /> New exam
               </button>
+              <ShareScoreButton
+                percent={pct}
+                test={test}
+                subjectLabel="full-length exam"
+                score={totalScore}
+                total={totalQuestions}
+              />
               <Link to="/progress" className="btn-ghost">
                 View progress <ArrowRight className="h-4 w-4" />
               </Link>
