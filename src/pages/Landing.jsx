@@ -153,7 +153,7 @@ export default function Landing() {
           <div>
             <span className="anim-fade-up inline-flex items-center gap-2 rounded-full border border-electric-400/30 bg-electric-500/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-electric-300">
               <Sparkles className="h-3.5 w-3.5" />
-              AI-built, AI-verified ACT &amp; SAT prep
+              Human-built platform &middot; AI-verified questions
             </span>
 
             <h1
