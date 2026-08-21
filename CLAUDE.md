@@ -65,7 +65,7 @@ verified, ACT Reading includes the paired + graph variants, ACT Math includes di
 `public/exams/index.json` is the manifest (id, test, label, section summaries).
 **To (re)generate:** put `ANTHROPIC_API_KEY` (+ `OPENAI_API_KEY` for verification) in `EXAM_KEYS.txt`
 (git-ignored) or `.env.local`, then run **in the FOREGROUND** (background shells can't see the project):
-`TEST=ACT COUNT=4 node /Users/justindaffner/Desktop/Developer/prepnova/scripts/build-exams.mjs`
+`TEST=ACT COUNT=4 node /Users/justindaffner/Developer/prepnova/scripts/build-exams.mjs`
 (also `TEST=SAT`). It mirrors the serverless generation+verification, caches each finished section to
 `public/exams/_parts/` (git-ignored) so it's resumable, skips exams whose file exists, and rebuilds
 `index.json` from ALL exam files on disk (running one test never drops the other). Commit
@@ -191,7 +191,8 @@ All custom CSS utilities live in `src/index.css`; **everything is disabled under
 
 ## Conventions / gotchas
 
-- **Project path: `/Users/justindaffner/Desktop/Developer/prepnova`** (moved from `~/Developer` mid-build). Background Bash shells run in an isolated FS that can't see it — run builds/scripts in the FOREGROUND, and use `git -C <path>` (a `cd` into the path fails in the background shell).
+- **Project path: `/Users/justindaffner/Developer/prepnova`** (moved back OUT of `~/Desktop/Developer/` on 2026-08-20). **Why it moved:** macOS TCC gates Desktop/Documents/Downloads per-app, and Claude.app lost that grant mid-session — every read of the project returned `EPERM: operation not permitted` even though the Unix perms were fine. Keeping the repo outside those three folders avoids the whole class of problem. If reads ever fail with EPERM again, check **System Settings → Privacy & Security → Files and Folders / Full Disk Access** for the app that owns the process (find it with `ps -o ppid=,comm=` up the tree — it's `/Applications/Claude.app`, *not* Terminal), then fully quit + relaunch that app (TCC is only read at launch).
+- Background Bash shells run in an isolated FS that can't see the project — run builds/scripts in the FOREGROUND, and use `git -C <path>` / an explicit `cd ~/Developer/prepnova` at the start of each command (the shell cwd resets between calls).
 - **Tooling installed this session:** `ui-ux-pro-max` skill (`~/.claude/skills/ui-ux-pro-max`, has a Python BM25 search over CSV design DBs — `python3 scripts/search.py "<q>" --design-system`); `magic` MCP (21st.dev, in `~/.claude.json` user scope; its builder output didn't integrate cleanly — targets TS/shadcn/framer, so components were hand-built in-brand instead).
 - `EXAM_KEYS.txt` was deleted after the build; recreate it (git-ignored) with the two keys to regenerate exams.
 - Owner is non-technical: explain in plain language; he drives Stripe/Vercel/Namecheap dashboards (give all steps at once — he prefers consolidated messages).
